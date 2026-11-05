@@ -1,0 +1,8 @@
+{
+  "name": "Harmony NG",
+  "homeassistant": "2026.8.0",
+  "content_in_root": false,
+  "render_readme": true,
+  "zip_release": true,
+  "filename": "harmony_ng.zip"
+}

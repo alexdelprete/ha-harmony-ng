@@ -1,0 +1,78 @@
+name: "Release"
+
+on:
+  release:
+    types:
+      - "published"
+
+permissions: {}
+
+jobs:
+  release:
+    name: "Release"
+    runs-on: "ubuntu-latest"
+    permissions:
+      contents: write
+    steps:
+      - name: "Checkout the repository"
+        uses: "actions/checkout@v7"
+
+      - name: "Validate version numbers"
+        shell: "bash"
+        run: |
+          # Extract version from tag (remove 'v' prefix if present)
+          TAG_VERSION="${{ github.event.release.tag_name }}"
+          TAG_VERSION="${TAG_VERSION#v}"
+
+          # Extract version from manifest.json
+          MANIFEST_VERSION=$(yq -r '.version' \
+            "${{ github.workspace }}/custom_components/harmony_ng/manifest.json")
+
+          # Extract VERSION from const.py
+          CONST_VERSION=$(grep -E "^VERSION = " \
+            "${{ github.workspace }}/custom_components/harmony_ng/const.py" \
+            | sed 's/VERSION = "\(.*\)"/\1/')
+
+          # Fail early if extraction produced nothing (drifted declaration style)
+          if [[ -z "$CONST_VERSION" ]]; then
+            echo "::error::Could not extract VERSION from const.py"
+            echo ""
+            echo "ERROR: could not extract VERSION from const.py."
+            echo "const.py must declare the version as exactly:"
+            echo "  VERSION = \"X.Y.Z\""
+            echo "(plain assignment — no Final annotation; repo-sync enforces this form)."
+            exit 1
+          fi
+
+          echo "Tag version:      $TAG_VERSION"
+          echo "manifest.json:    $MANIFEST_VERSION"
+          echo "const.py:         $CONST_VERSION"
+
+          # Validate all versions match
+          if [[ "$TAG_VERSION" != "$MANIFEST_VERSION" ]] || [[ "$TAG_VERSION" != "$CONST_VERSION" ]]; then
+            echo ""
+            echo "::error::Version mismatch detected!"
+            echo ""
+            echo "ERROR: Version mismatch!"
+            echo "  Tag:           $TAG_VERSION"
+            echo "  manifest.json: $MANIFEST_VERSION"
+            echo "  const.py:      $CONST_VERSION"
+            echo ""
+            echo "Please update versions in manifest.json and const.py before releasing."
+            echo "See CLAUDE.md for the release process."
+            exit 1
+          fi
+
+          echo ""
+          echo "✓ All versions match: $TAG_VERSION"
+
+      - name: "ZIP the integration directory"
+        shell: "bash"
+        run: |
+          cd "${{ github.workspace }}/custom_components/harmony_ng"
+          zip harmony_ng.zip -r ./
+
+      - name: "Upload the ZIP file to the release"
+        uses: softprops/action-gh-release@v3.0.3
+        with:
+          files: ${{ github.workspace }}/custom_components/harmony_ng/harmony_ng.zip
