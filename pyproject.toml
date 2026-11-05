@@ -1,0 +1,53 @@
+[project]
+name = "ha-harmony-ng"
+version = "0.1.0"
+description = "Home Assistant custom integration for Harmony NG"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.14.2"
+authors = [{ name = "alexdelprete" }]
+
+[project.urls]
+"Homepage" = "https://github.com/alexdelprete/ha-harmony-ng"
+"Bug Tracker" = "https://github.com/alexdelprete/ha-harmony-ng/issues"
+
+[project.optional-dependencies]
+dev = [
+    "homeassistant>=2026.8.0",
+    "homeassistant-stubs",
+    "mdformat",
+    "mdformat-gfm",
+    "pre-commit",
+    "ruff==0.16.8",
+    "ty==0.0.82",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov",
+    "pytest-homeassistant-custom-component==0.13.366",
+    "pytest-timeout",
+]
+
+[dependency-groups]
+lint = [
+    "homeassistant-stubs",
+    "mdformat",
+    "mdformat-gfm",
+    "pre-commit",
+    "ruff==0.16.8",
+    "ty==0.0.82",
+]
+pytest = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov",
+    "pytest-homeassistant-custom-component==0.13.366",
+    "pytest-timeout",
+]
+dev = [
+    "homeassistant>=2026.8.0",
+    { include-group = "lint" },
+    { include-group = "pytest" },
+]
+
+# <!-- BEGIN SHARED:repo-sync -->
+# <!-- END SHARED:repo-sync -->

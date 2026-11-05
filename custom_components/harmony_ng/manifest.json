@@ -1,0 +1,11 @@
+{
+  "domain": "harmony_ng",
+  "name": "Harmony NG",
+  "codeowners": ["@alexdelprete"],
+  "config_flow": true,
+  "documentation": "https://github.com/alexdelprete/ha-harmony-ng",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/alexdelprete/ha-harmony-ng/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

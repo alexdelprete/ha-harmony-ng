@@ -1,0 +1,16 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Harmony NG",
+        "description": "Set up your Harmony NG device.",
+        "data": {
+          "host": "Host"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
+    }
+  }
+}
