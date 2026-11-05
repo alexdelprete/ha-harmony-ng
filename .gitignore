@@ -86,9 +86,6 @@ Thumbs.db
 *.log
 .ruff_cache/
 settings.local.json
+CLAUDE.local.md
 uv.lock
 nul
-
-# Private integration brief (contains homelab details); never commit
-docs/ha_integration_brief.md
-CLAUDE.local.md
