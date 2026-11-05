@@ -46,6 +46,11 @@ vars:
 
   # ── Extras ──
   gitignore_extra: []
+  # Raw Docker --mount strings appended to the devcontainer mounts.
+  # harmony-ng firmware clone (read-write) and private firmware notes (read-only).
+  devcontainer_extra_mounts:
+    - "source=${localEnv:USERPROFILE:/home/alexdelprete}/dev/harmony-ng,target=/home/vscode/dev/harmony-ng,type=bind,consistency=cached"
+    - "source=${localEnv:USERPROFILE:/home/alexdelprete}/dev/harmony-ng-data,target=/home/vscode/dev/harmony-ng-data,type=bind,consistency=cached,readonly"
   bug_extra_fields: []
   config_extra_links: []
 
