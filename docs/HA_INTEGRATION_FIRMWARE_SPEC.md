@@ -648,8 +648,10 @@ Subscribe to `<base>/cmd`. Request:
 `id` is an opaque client string, up to 64 characters, echoed in the reply. Actions and fields mirror
 the WebSocket actions exactly: `start_activity` (`activity`), `stop_activity`, `cancel_activity`,
 `send_command` (`deviceId`, `command`, `status` = `press`, `hold`, `release` or omitted for a tap,
-`repeats`), `bt_key` (`key`, `keyAction`, `target`), `rf_wake` (`slot`), `rf_sleep` (`slot`),
-`sync`, `get_snapshot` (reply carries the snapshot), `ir_raw` (fields of 3.11).
+`repeats`, optional `port` bitmask as `/api/ir-send`), `bt_key` (`key`, `keyAction`, `target`),
+`rf_wake` (`slot`), `rf_sleep` (`slot`), `sync`, `get_snapshot` (reply carries the snapshot),
+`activity_help` (reply carries `activity` and `toggleDevices` as `POST /api/activity/help`),
+`activity_help_answer` (`device`, `on`), `ir_raw` (fields of 3.11).
 
 Reply on `<base>/cmd/response`:
 
