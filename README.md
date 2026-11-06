@@ -11,11 +11,34 @@
 
 <!-- END SHARED:repo-sync:badges -->
 
-A Home Assistant custom integration for Harmony NG.
+Home Assistant integration for a Logitech Harmony Hub running the open-source
+[harmony-ng](https://github.com/iranl/harmony-ng) firmware. The Hub pushes every change over a
+WebSocket, so activities, remotes and Bluetooth hosts update in Home Assistant the moment they
+change, without polling. The integration replaces the core Harmony integration for these Hubs, which
+no longer speak the Logitech protocol.
+
+## Supported devices
+
+- Logitech Harmony Hub (the base of the Elite, Ultimate, Companion and Smart Control bundles)
+  running harmony-ng with the event bus (`api_version` 2 or newer). Older harmony-ng releases and
+  stock Logitech firmware are not supported.
+- RF remotes paired with the Hub: Harmony Elite, Ultimate, Companion and Smart Control. Each remote
+  is a device of its own, identified by its unit id when the remote's firmware reports it.
+- Bluetooth hosts paired with the Hub appear as connectivity sensors.
 
 ## Features
 
-- TODO: List features
+- One `remote` entity per Hub with the attributes and services of the core Harmony integration, so
+  existing automations port with a change of entity id: `remote.turn_on` with an activity,
+  `remote.turn_off`, `remote.send_command` with device, repeats, delay and hold.
+- Activity select, activity state, firmware and last-boot sensors, a busy indicator.
+- Per remote: battery, voltage, charging and configuration-sync sensors, wake and sleep buttons,
+  and an `event` entity for every key press and release.
+- Infrared emitters for the front blaster and the two emitter jacks, usable by Home Assistant's
+  infrared integrations (LG, Samsung, Marantz, Dyson and others) as their transmitter.
+- Services for device commands on chosen outputs, Bluetooth keys, Help and cancel.
+- Discovery through mDNS once the Hub's firmware announces itself; manual setup by address
+  otherwise. Optional Personal Access Token when the Hub has authentication enabled.
 
 <!-- BEGIN SHARED:repo-sync:installation -->
 <!-- Synced by repo-sync on 2026-11-06 -->
@@ -46,7 +69,112 @@ integration is not listed in the catalog, add the repository by link:
 
 ## Configuration
 
-TODO: Describe configuration steps.
+The Hub is found automatically on the local network. Otherwise add the integration from
+**Settings > Devices & services** and enter the Hub's address.
+
+<!-- pyml disable md013 -->
+
+| Parameter | Where | Meaning |
+| --- | --- | --- |
+| Host, port | setup and reconfigure | The Hub's address and API port, 8089 by default |
+| Personal Access Token | setup, reauthenticate, reconfigure | Only when the Hub has authentication enabled; create one in the Hub's web UI under Users |
+| Default activity | options | Activity started by `remote.turn_on` without an activity: the previous one or a named one |
+| Delay between commands | options | Seconds between the commands of one `remote.send_command` call, 0.4 by default |
+
+<!-- pyml enable md013 -->
+
+Changing the Hub's address keeps every entity: the Hub is identified by its unit id, never by
+its address.
+
+## Actions
+
+Besides the standard `remote` actions, the integration provides:
+
+<!-- pyml disable md013 -->
+
+| Action | What it does |
+| --- | --- |
+| `harmony_ng.ir_send` | Sends a device command by name on the chosen infrared outputs |
+| `harmony_ng.bt_key` | Sends a keyboard key to a paired Bluetooth host |
+| `harmony_ng.activity_help` | Re-sends the running activity's start commands and returns the devices whose power is a toggle |
+| `harmony_ng.activity_help_answer` | Answers the Help question for one device |
+| `harmony_ng.activity_cancel` | Clears a stuck activity change |
+| `harmony_ng.sync` | Pushes the Hub's configuration to the remotes |
+
+<!-- pyml enable md013 -->
+
+All actions target the Hub device; the entity action `harmony_ng.sync` targets the remote entity.
+
+### Triggers and conditions
+
+Every remote has an `event` entity that fires on each key press and release with the key name,
+the mapped device and command as attributes; use it with the **event** trigger. Activity changes
+are available as state triggers on the `select` and `sensor` entities and as conditions on the
+`remote` entity's state and `current_activity` attribute.
+
+### Examples
+
+```yaml
+# Start an activity by name
+action: remote.turn_on
+target:
+  entity_id: remote.living_room_hub
+data:
+  activity: Watch TV
+
+# Hold volume up on the TV for a second
+action: remote.send_command
+target:
+  entity_id: remote.living_room_hub
+data:
+  device: LG OLED TV
+  command: VolumeUp
+  hold_secs: 1
+
+# Act on a key of the physical remote
+triggers:
+  - trigger: event
+    entity_id: event.harmony_ultimate_1_button
+    event_type: press
+conditions:
+  - condition: template
+    value_template: "{{ trigger.event.data.button == 'Menu' }}"
+```
+
+## Data updates
+
+The Hub pushes events over its WebSocket; nothing is polled. Inventory and activities are read
+once at startup and again when the Hub reports a configuration change. If the connection drops,
+every entity becomes unavailable until the integration reconnects, which it does with increasing
+delays up to 30 seconds.
+
+## Known limitations
+
+- The Hub needs harmony-ng firmware with the event bus. The integration refuses older firmware
+  and raises a repair issue saying so.
+- A remote running older firmware does not report its unit id; it is then identified by its
+  slot until the id arrives, and re-keyed automatically when it does.
+- Infrared emitters send raw timings only; Pronto codes go through the Hub's own device
+  commands, not through the emitter entities.
+- MQTT as an alternative transport arrives in a later release.
+
+## Troubleshooting
+
+- **Cannot connect** during setup: check that the Hub answers at `http://<host>:8089` in a browser
+  and that no firewall sits between Home Assistant and the Hub.
+- **Entities unavailable**: the WebSocket to the Hub dropped. The integration reconnects by
+  itself; a Hub restart takes about a minute. Diagnostics (three-dot menu of the entry) show the
+  last state and the transport's connection flag.
+- **Repair issue about the Logitech protocol**: the Hub has the legacy protocol enabled, so the
+  core Harmony integration can also see it and would create duplicate entities. Disable the
+  setting on the Hub or remove the core integration's entry for this Hub.
+- **Commands refused as busy**: the Hub is switching activities; wait for it to finish or use
+  `harmony_ng.activity_cancel` if it is stuck.
+
+## Removal
+
+Delete the entry from **Settings > Devices & services**. Nothing is left on the Hub; a Personal
+Access Token created for Home Assistant can be revoked in the Hub's web UI.
 
 <!-- BEGIN SHARED:repo-sync:contributing -->
 <!-- Synced by repo-sync on 2026-11-06 -->

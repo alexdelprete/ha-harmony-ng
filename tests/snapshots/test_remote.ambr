@@ -1,0 +1,64 @@
+# serializer version: 1
+# name: test_entity[remote.living_room_hub-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <DeviceEntry identifiers=[('harmony_ng', '20140101120000-000001')]>,
+    'disabled_by': None,
+    'domain': 'remote',
+    'entity_category': None,
+    'entity_id': 'remote.living_room_hub',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': None,
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': None,
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': <RemoteEntityFeature: 4>,
+    'translation_key': 'remote',
+    'unique_id': '20140101120000-000001_remote',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entity[remote.living_room_hub-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <RemoteEntityStateAttribute.ACTIVITY_LIST: 'activity_list'>: list([
+        'Watch TV',
+        'Listen to Music',
+      ]),
+      'activity_starting': False,
+      <RemoteEntityStateAttribute.CURRENT_ACTIVITY: 'current_activity'>: None,
+      'devices_list': list([
+        'LG OLED TV',
+        'Soundbar',
+        'Apple TV',
+      ]),
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living Room Hub',
+      'last_activity': None,
+      <EntityStateAttribute.SUPPORTED_FEATURES: 'supported_features'>: <RemoteEntityFeature: 4>,
+    }),
+    'context': <ANY>,
+    'entity_id': 'remote.living_room_hub',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'off',
+  })
+# ---

@@ -1,0 +1,75 @@
+"""Tests for the binary sensors."""
+
+from __future__ import annotations
+
+from unittest.mock import patch
+
+import pytest
+from pytest_homeassistant.common import MockConfigEntry, snapshot_platform
+from syrupy.assertion import SnapshotAssertion
+
+from homeassistant.const import STATE_UNAVAILABLE, Platform
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
+
+from .conftest import FakeTransport
+from .pyharmonyng.conftest import load_frames
+
+BUSY = "binary_sensor.living_room_hub_busy"
+SYNC = "binary_sensor.harmony_ultimate_1_configuration_out_of_sync"
+APPLE_TV = "binary_sensor.living_room_hub_apple_tv_connected"
+SHIELD = "binary_sensor.living_room_hub_shield_connected"
+
+
+@pytest.fixture(autouse=True)
+def only_binary_sensor() -> None:
+    with patch("custom_components.harmony_ng.PLATFORMS", [Platform.BINARY_SENSOR]):
+        yield
+
+
+async def test_entities(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    entity_registry: er.EntityRegistry,
+    snapshot: SnapshotAssertion,
+) -> None:
+    await snapshot_platform(hass, entity_registry, snapshot, init_integration.entry_id)
+
+
+async def test_busy_and_sync(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    assert hass.states.get(BUSY).state == "off"
+    assert hass.states.get(SYNC).state == "off"
+    fake_transport.push(load_frames("ws_activity_switch")[0])
+    rf = load_frames("ws_rf_status")[0]
+    rf["slots"][0]["in_sync"] = False
+    fake_transport.push(rf)
+    await hass.async_block_till_done()
+    assert hass.states.get(BUSY).state == "on"
+    assert hass.states.get(SYNC).state == "on"
+    del rf["slots"][0]["in_sync"]
+    fake_transport.push(rf)
+    await hass.async_block_till_done()
+    assert hass.states.get(SYNC).state == "unknown"
+
+
+async def test_bluetooth_hosts(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    apple = hass.states.get(APPLE_TV)
+    assert apple.state == "on"
+    assert apple.attributes["bdaddr"] == "AA:BB:CC:DD:EE:FF"
+    assert hass.states.get(SHIELD).state == "off"
+
+    bt = load_frames("ws_bt_status")[0]
+    bt["target"] = "11:22:33:44:55:66"
+    bt["devices"] = [
+        {"bdaddr": "11:22:33:44:55:66", "name": "Shield"},
+        {"bdaddr": "77:88:99:AA:BB:CC", "name": "Projector"},
+    ]
+    fake_transport.push(bt)
+    await hass.async_block_till_done()
+    assert hass.states.get(APPLE_TV).state == STATE_UNAVAILABLE
+    assert hass.states.get(SHIELD).state == "on"
+    assert hass.states.get("binary_sensor.living_room_hub_projector_connected").state == "off"

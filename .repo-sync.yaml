@@ -57,7 +57,8 @@ vars:
   # ── Dev dependencies ──
   # Integration-specific packages appended to the shared dev extra / dev group
   # that repo-sync renders into pyproject.toml.
-  dev_extra_requirements: []
+  dev_extra_requirements:
+    - "infrared-protocols==10.5.0"   # the infrared platform's requirement in HA 2026.11, needed by the tests
 
 copy_files:
   - .gitattributes

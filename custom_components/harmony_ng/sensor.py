@@ -1,31 +1,81 @@
-"""Sensor platform for Harmony NG."""
+"""Sensors: activity state, firmware and uptime of the Hub; battery of each remote."""
 
 from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-import logging
-from typing import Any
+from datetime import datetime, timedelta
 
-from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorEntityDescription
+from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfElectricPotential
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.typing import StateType
 
 from . import HarmonyNgConfigEntry
-from .entity import HarmonyNgEntity
-
-_LOGGER = logging.getLogger(__name__)
+from .coordinator import HarmonyNgCoordinator, HubState
+from .entity import HarmonyNgEntity, async_add_dynamic_entities
+from .pyharmonyng import ActivityStatus, RfSlot
 
 
 @dataclass(frozen=True, kw_only=True)
-class HarmonyNgSensorEntityDescription(SensorEntityDescription):
-    """Describes a Harmony NG sensor entity."""
+class HarmonyNgSensorDescription(SensorEntityDescription):
+    """A Hub sensor read from the state."""
 
-    value_fn: Callable[[dict[str, Any]], Any] | None = None
+    value_fn: Callable[[HubState], StateType | datetime]
 
 
-SENSOR_DESCRIPTIONS: tuple[HarmonyNgSensorEntityDescription, ...] = (
-    # TODO: Add sensor descriptions
+@dataclass(frozen=True, kw_only=True)
+class HarmonyNgSlotSensorDescription(SensorEntityDescription):
+    """A remote sensor read from its RF slot."""
+
+    value_fn: Callable[[RfSlot], StateType]
+
+
+def _uptime(state: HubState) -> datetime | None:
+    if state.hub.uptime_sec is None:
+        return None
+    return state.received_at - timedelta(seconds=state.hub.uptime_sec)
+
+
+HUB_SENSORS: tuple[HarmonyNgSensorDescription, ...] = (
+    HarmonyNgSensorDescription(
+        key="activity_state",
+        device_class=SensorDeviceClass.ENUM,
+        options=[status.value for status in ActivityStatus],
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda state: state.activity.state.value,
+    ),
+    HarmonyNgSensorDescription(
+        key="firmware",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda state: state.hub.version or None,
+    ),
+    HarmonyNgSensorDescription(
+        key="uptime",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=_uptime,
+    ),
+)
+
+SLOT_SENSORS: tuple[HarmonyNgSlotSensorDescription, ...] = (
+    HarmonyNgSlotSensorDescription(
+        key="battery",
+        device_class=SensorDeviceClass.BATTERY,
+        native_unit_of_measurement=PERCENTAGE,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda slot: slot.battery_percent,
+    ),
+    HarmonyNgSlotSensorDescription(
+        key="battery_voltage",
+        device_class=SensorDeviceClass.VOLTAGE,
+        native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=lambda slot: slot.voltage_mv,
+    ),
 )
 
 
@@ -34,21 +84,46 @@ async def async_setup_entry(
     entry: HarmonyNgConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up sensor entities."""
+    """Set up the Hub sensors, and a battery sensor set for every paired remote."""
     coordinator = entry.runtime_data.coordinator
-    async_add_entities(
-        HarmonyNgSensor(coordinator, description) for description in SENSOR_DESCRIPTIONS
+    async_add_entities(HarmonyNgHubSensor(coordinator, desc) for desc in HUB_SENSORS)
+    entry.async_on_unload(
+        async_add_dynamic_entities(
+            coordinator,
+            async_add_entities,
+            lambda state: [slot.slot for slot in state.rf.active_slots],
+            lambda coord, slot: [HarmonyNgSlotSensor(coord, desc, slot) for desc in SLOT_SENSORS],
+        )
     )
 
 
-class HarmonyNgSensor(HarmonyNgEntity, SensorEntity):
-    """A Harmony NG sensor."""
+class HarmonyNgHubSensor(HarmonyNgEntity, SensorEntity):
+    """A sensor of the Hub."""
 
-    entity_description: HarmonyNgSensorEntityDescription
+    entity_description: HarmonyNgSensorDescription
 
     @property
-    def native_value(self) -> Any:
-        """Return the value read from the coordinator data."""
-        if self.entity_description.value_fn is None:
-            return None
-        return self.entity_description.value_fn(self.coordinator.data)
+    def native_value(self) -> StateType | datetime:
+        """Return the value read from the state."""
+        return self.entity_description.value_fn(self.state_data)
+
+
+class HarmonyNgSlotSensor(HarmonyNgEntity, SensorEntity):
+    """A sensor of the remote in one RF slot."""
+
+    entity_description: HarmonyNgSlotSensorDescription
+
+    def __init__(
+        self,
+        coordinator: HarmonyNgCoordinator,
+        description: HarmonyNgSlotSensorDescription,
+        slot: int,
+    ) -> None:
+        """Attach the sensor to the remote's device."""
+        super().__init__(coordinator, description, slot=slot)
+
+    @property
+    def native_value(self) -> StateType:
+        """Return the value read from the slot."""
+        rf_slot = self.state_data.slot(self._slot or 0)
+        return self.entity_description.value_fn(rf_slot) if rf_slot else None

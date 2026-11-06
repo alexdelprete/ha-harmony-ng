@@ -285,11 +285,16 @@ class HubState:
 - Every `HubEvent` produces a new `HubState` through `async_set_updated_data`. `ConfigChangedEvent`
   with `activities` or `devices` in `files`, and a reconnect snapshot with `gap`, schedule a refetch
   of activities and inventory (debounced 2 s).
-- `on_connection(False)` sets `connected=False` and `last_update_success=False` so every entity
-  turns unavailable; `on_connection(True)` restores both and applies the new snapshot. Home
-  Assistant logs the transitions once (`log-when-unavailable`).
+- `on_connection(False)` sets `connected=False` and reports the loss through
+  `async_set_update_error`, so every entity turns unavailable and Home Assistant logs the loss
+  once; the snapshot of the reconnect restores the state through `async_set_updated_data`, which
+  logs the recovery (`log-when-unavailable`, no manual logging).
 - `last_activity_id` is kept across power off for the remote entity's `last_activity` attribute
   and the `previous activity` option.
+- Button events are not state: the coordinator fans them out to per-slot listeners that the
+  event entities register in `async_added_to_hass`.
+- When a remote's unit id first appears, the coordinator re-keys the device and entity registry
+  entries (2.6) and schedules a reload of the entry so the live entities pick up the new keys.
 
 ### 2.4 Capability handling
 
@@ -443,7 +448,10 @@ live in `icons.json` per key, with state icons for `activity_state`, `charging` 
 
 ## 3. Quality scale mapping
 
-The tier is self-declared; `quality_scale.yaml` tracks every rule. The non-obvious ones:
+The tier is self-declared; `quality_scale.yaml` tracks every rule and `manifest.json` declares the
+highest tier with every rule done or exempt: `silver` until discovery lands with firmware
+milestone 2, then `platinum`, since the Gold and Platinum rules are already met in code. The
+non-obvious ones:
 
 <!-- pyml disable md013 -->
 

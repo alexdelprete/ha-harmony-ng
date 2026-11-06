@@ -1,0 +1,62 @@
+# serializer version: 1
+# name: test_entity[select.living_room_hub_activity-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'PowerOff',
+        'Watch TV',
+        'Listen to Music',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <DeviceEntry identifiers=[('harmony_ng', '20140101120000-000001')]>,
+    'disabled_by': None,
+    'domain': 'select',
+    'entity_category': None,
+    'entity_id': 'select.living_room_hub_activity',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Activity',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Activity',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'activity',
+    'unique_id': '20140101120000-000001_activity',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entity[select.living_room_hub_activity-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living Room Hub Activity',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        'PowerOff',
+        'Watch TV',
+        'Listen to Music',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'select.living_room_hub_activity',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'PowerOff',
+  })
+# ---
