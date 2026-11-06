@@ -452,8 +452,8 @@ it can be tested end to end. The scaffolding update is independent and lands fir
 
 <!-- pyml enable md013 -->
 
-Open questions: whether configured IR and BT devices become child devices in the first release or later; whether the
-PyPI package name pyharmonyng is free.
+Open questions: whether configured IR and BT devices become child devices in the first release or later. The PyPI name
+pyharmonyng was free on 2026-11-06.
 
 ## Sources
 
