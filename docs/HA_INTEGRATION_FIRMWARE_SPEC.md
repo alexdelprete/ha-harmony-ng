@@ -4,7 +4,7 @@
 # Firmware specification for the Harmony NG Home Assistant integration
 
 Version 1.0, 2026-11-06. Companion to the integration's architecture document
-(`docs/architecture.md` in the ha-harmony-ng repository), which holds the reasoning and the
+(`docs/HA_INTEGRATION_ARCHITECTURE.md` in the ha-harmony-ng repository), which holds the reasoning and the
 measurements. This document holds only what the firmware must do, item by item, so that an
 implementer can work through it without the design discussion.
 
