@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Brand icon: a compact `h·ng` mark replaces the full wordmark in the square icon, which
+  shrank to an unreadable size on the discovery card and in integration lists. The wide
+  wordmark stays as the logo.
+
 ## [0.1.0] - 2026-11-06
 
 First release. Home Assistant integration for a Logitech Harmony Hub running the
