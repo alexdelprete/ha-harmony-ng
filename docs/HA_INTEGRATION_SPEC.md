@@ -1,6 +1,6 @@
 # Implementation specification for the Harmony NG integration and pyharmonyng
 
-Version 1.0, 2026-11-06. Companion to `docs/architecture.md` (the design and its reasoning) and to
+Version 1.0, 2026-11-06. Companion to `docs/HA_INTEGRATION_ARCHITECTURE.md` (the design and its reasoning) and to
 `docs/HA_INTEGRATION_FIRMWARE_SPEC.md` (what the firmware provides). This document pins what the
 integration and its library implement, entity by entity and call by call, so that the two
 transports produce identical results and the firmware side knows which flag unlocks what.
