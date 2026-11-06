@@ -12,5 +12,18 @@
     "abort": {
       "already_configured": "Device is already configured"
     }
+  },
+  "issues": {
+    "device_offline": {
+      "title": "{name} is offline",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Harmony NG device offline",
+            "description": "Home Assistant cannot reach the device. Check that it is powered on and reachable on the network, then confirm to dismiss this repair."
+          }
+        }
+      }
+    }
   }
 }
