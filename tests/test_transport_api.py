@@ -14,6 +14,7 @@ from custom_components.harmony_ng.pyharmonyng import (
     HubStatus,
     KeyAction,
     Snapshot,
+    UpdateStatus,
 )
 from custom_components.harmony_ng.transport.api import ApiTransport
 
@@ -146,3 +147,25 @@ async def test_rest_fallback_when_socket_is_down(client: MagicMock, listener: Ma
         await transport.send_command("d", "c", CommandAction.PRESS, 1)
     transport.set_token(None)
     client.set_token.assert_called_once_with(None)
+
+
+async def test_update_and_capture(client: MagicMock, listener: MagicMock) -> None:
+    client.get_update_status = AsyncMock(return_value=UpdateStatus("2.2.0", "2.3.0", True, ""))
+    client.update_check = AsyncMock(return_value=UpdateStatus("2.2.0", None, True, "newer"))
+    client.update_apply = AsyncMock()
+    client.ir_capture = AsyncMock()
+    listener.ir_capture = AsyncMock()
+    transport = make_transport()
+    transport.set_callbacks(
+        on_event=lambda _: None, on_connection=lambda _: None, on_snapshot=lambda _: None
+    )
+    await transport.connect()
+    status = await transport.update_check()
+    assert status == UpdateStatus("2.2.0", "2.3.0", True, "newer")
+    await transport.update_apply()
+    client.update_apply.assert_awaited_once()
+    await transport.ir_capture(True)
+    listener.ir_capture.assert_awaited_once_with(True)
+    listener.connected = False
+    await transport.ir_capture(False)
+    client.ir_capture.assert_awaited_once_with(False)

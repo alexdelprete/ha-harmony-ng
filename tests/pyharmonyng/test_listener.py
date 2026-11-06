@@ -200,6 +200,7 @@ async def test_actions(started: tuple[HarmonyNgListener, Recorder, Snapshot], hu
     await listener.send_command("70321456", "VolumeUp", action=CommandAction.PRESS)
     await listener.bt_key("KEY_ENTER")
     await listener.bt_key("KEY_UP", action=KeyAction.DOWN, target="AA:BB:CC:DD:EE:FF")
+    await listener.ir_capture(True)
     reply = await listener.send_action("ping")
     assert reply["type"] == "pong"
     assert [{k: v for k, v in action.items() if k != "msgId"} for action in hub.actions] == [
@@ -215,9 +216,10 @@ async def test_actions(started: tuple[HarmonyNgListener, Recorder, Snapshot], hu
         },
         {"action": "bt_key", "key": "KEY_ENTER", "keyAction": "tap"},
         {"action": "bt_key", "key": "KEY_UP", "keyAction": "down", "target": "AA:BB:CC:DD:EE:FF"},
+        {"action": "ir_capture", "enabled": True},
         {"action": "ping"},
     ]
-    assert [action["msgId"] for action in hub.actions] == list(range(1, 9))
+    assert [action["msgId"] for action in hub.actions] == list(range(1, 10))
 
 
 async def test_request_snapshot(

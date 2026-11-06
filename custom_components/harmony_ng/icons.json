@@ -1,31 +1,62 @@
 {
   "entity": {
     "binary_sensor": {
-      "busy": { "default": "mdi:progress-clock" },
-      "charging": { "default": "mdi:battery-charging" },
+      "busy": {
+        "default": "mdi:progress-clock"
+      },
+      "charging": {
+        "default": "mdi:battery-charging"
+      },
       "config_out_of_sync": {
         "default": "mdi:sync",
-        "state": { "on": "mdi:sync-alert" }
+        "state": {
+          "on": "mdi:sync-alert"
+        }
       },
-      "bt_host": { "default": "mdi:bluetooth" }
+      "bt_host": {
+        "default": "mdi:bluetooth"
+      }
     },
     "button": {
-      "power_off": { "default": "mdi:power" },
-      "sync_remotes": { "default": "mdi:sync" },
-      "cancel_activity": { "default": "mdi:cancel" },
-      "wake": { "default": "mdi:cellphone-arrow-down" },
-      "sleep": { "default": "mdi:sleep" }
+      "power_off": {
+        "default": "mdi:power"
+      },
+      "sync_remotes": {
+        "default": "mdi:sync"
+      },
+      "cancel_activity": {
+        "default": "mdi:cancel"
+      },
+      "wake": {
+        "default": "mdi:cellphone-arrow-down"
+      },
+      "sleep": {
+        "default": "mdi:sleep"
+      }
     },
     "event": {
-      "button": { "default": "mdi:remote" }
+      "button": {
+        "default": "mdi:remote"
+      }
     },
     "infrared": {
-      "ir_front": { "default": "mdi:remote-tv" },
-      "ir_jack1": { "default": "mdi:led-on" },
-      "ir_jack2": { "default": "mdi:led-on" }
+      "ir_front": {
+        "default": "mdi:remote-tv"
+      },
+      "ir_jack1": {
+        "default": "mdi:led-on"
+      },
+      "ir_jack2": {
+        "default": "mdi:led-on"
+      },
+      "ir_receiver": {
+        "default": "mdi:remote-tv"
+      }
     },
     "select": {
-      "activity": { "default": "mdi:television-play" }
+      "activity": {
+        "default": "mdi:television-play"
+      }
     },
     "sensor": {
       "activity_state": {
@@ -37,18 +68,43 @@
           "stopping": "mdi:television-off"
         }
       },
-      "firmware": { "default": "mdi:chip" },
-      "uptime": { "default": "mdi:clock-start" },
-      "battery": { "default": "mdi:battery" },
-      "battery_voltage": { "default": "mdi:flash" }
+      "firmware": {
+        "default": "mdi:chip"
+      },
+      "uptime": {
+        "default": "mdi:clock-start"
+      },
+      "battery": {
+        "default": "mdi:battery"
+      },
+      "battery_voltage": {
+        "default": "mdi:flash"
+      }
+    },
+    "update": {
+      "firmware_update": {
+        "default": "mdi:update"
+      }
     }
   },
   "services": {
-    "ir_send": { "service": "mdi:remote" },
-    "bt_key": { "service": "mdi:keyboard" },
-    "activity_help": { "service": "mdi:help-circle" },
-    "activity_help_answer": { "service": "mdi:help-circle-outline" },
-    "activity_cancel": { "service": "mdi:cancel" },
-    "sync": { "service": "mdi:sync" }
+    "ir_send": {
+      "service": "mdi:remote"
+    },
+    "bt_key": {
+      "service": "mdi:keyboard"
+    },
+    "activity_help": {
+      "service": "mdi:help-circle"
+    },
+    "activity_help_answer": {
+      "service": "mdi:help-circle-outline"
+    },
+    "activity_cancel": {
+      "service": "mdi:cancel"
+    },
+    "sync": {
+      "service": "mdi:sync"
+    }
   }
 }

@@ -29,7 +29,7 @@ Milestones, each one pull request per repository, aligned with the firmware ones
 | L1 library 0.1 | milestone 1 fixtures | REST models, WebSocket listener, exceptions, capability helpers, fixture replay tests; vendored in the integration |
 | I1 integration 0.1 | milestone 1 on the Hub (milestone 2 for discovery) | API transport, config flow with zeroconf, all first-release entities, services, repairs, diagnostics, quality scale rules except the MQTT-specific ones |
 | I2 integration 0.2 | milestone 3 | MQTT transport, transport step in the config flow, transport switch in reconfigure, parity tests, orphaned discovery entity repair |
-| Later | milestone 4 and beyond | Update entity once update-apply is validated, infrared receiver if capture coexists with sending, child devices for configured IR and BT devices |
+| I3 integration 0.3 | milestone 1 (capture), milestone 3 (MQTT actions) | Update entity, infrared receiver, child devices with a remote per configured device |
 
 <!-- pyml enable md013 -->
 
@@ -231,6 +231,9 @@ class HarmonyNgTransport(Protocol):
     async def push_config(self) -> None
     async def activity_help(self) -> HelpResult
     async def activity_help_answer(self, device_id: str, on: bool) -> None
+    async def update_check(self) -> UpdateStatus
+    async def update_apply(self) -> None
+    async def ir_capture(self, enabled: bool) -> None
     def set_callbacks(self, on_event: Callable[[HubEvent], None], on_connection: Callable[[bool], None]) -> None
 ```
 
@@ -355,6 +358,7 @@ passes `step_id`. The transport is never implied by how the Hub was found.
 | Hub | `(DOMAIN, hub_id)` | manufacturer Logitech, model Harmony Hub, model_id from `skin` when exposed, sw_version `version`, hw_version Logitech base firmware, serial_number `hub_id`, configuration_url `http://host:8089` (API) or absent (MQTT) | root device of the entry |
 | Remote | `(DOMAIN, remote_id)` | manufacturer Logitech, model from the slot (`Harmony Ultimate`, `Harmony Elite`, ...), sw_version remote firmware, serial_number `remote_id`, via_device_id the Hub's registry id | one per active slot; the slot number is an attribute of its entities |
 | Remote without id | `(DOMAIN, f"{hub_id}:slot{n}")` | as above, no serial | fallback for a remote running firmware that does not report its unit id |
+| Configured device | `(DOMAIN, f"{hub_id}:device:{id}")`, a child device (`ChildDeviceInfo`, parent = the Hub's registry id) | name from the inventory | one per inventory device, added as the inventory changes; removable from the device page once it left the inventory |
 
 <!-- pyml enable md013 -->
 
@@ -394,6 +398,9 @@ the address lowercased and colons removed.
 | button | `sleep` | Remote | config | none | `rf_sleep(slot)` | slot active |
 | event | `button` | Remote | none | event types `press`, `release`; device class button | fired on `ButtonEvent` for the slot; attributes `button`, `device_id`, `command`, `source` | slot active |
 | infrared | `ir_front`, `ir_jack1`, `ir_jack2` | Hub | none | emitter; jacks disabled by default | `InfraredEmitterEntity.async_send_command`: `ir_raw(command.modulation, command.get_raw_timings(), port, command.repeat_count)` with port 1, 2, 4 | `ir_raw` capability |
+| infrared | `ir_receiver` | Hub | none | receiver; disabled by default | turns the Hub's capture on in `async_added_to_hass` and off on removal; every `ir_received` event becomes `InfraredReceivedSignal(timings, modulation)` | `ir_capture` capability |
+| update | `firmware_update` | Hub | config | firmware; `INSTALL` | installed = `hub.version`; latest from the Hub's release check, polled every 24 h and run on add, after an install and when the Hub comes back with a new version; `install` calls `update_apply` | always |
+| remote | `remote` of each configured device | child device | none | assumed state, no activity feature | `send_command` without naming the device; `turn_on` sends PowerOn else PowerToggle, `turn_off` PowerOff else PowerToggle; attributes commands, manufacturer, model, type | device still in the inventory |
 
 <!-- pyml enable md013 -->
 
@@ -509,6 +516,8 @@ non-obvious ones:
 - **I2**: MQTT transport, transport step and switch, parity tests, orphan repair; verified with
   firmware milestone 3 against the owner's broker; a transport switch on the live entry keeps every
   entity id and history.
+- **I3**: update entity, infrared receiver and child devices, written before the firmware's
+  capture item exists; the receiver stays unavailable until the Hub lists `ir_capture`.
 
 ## 6. Decisions taken in this document
 

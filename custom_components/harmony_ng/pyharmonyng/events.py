@@ -13,6 +13,7 @@ from .models import (
     ActivityProgress,
     ActivityState,
     BtStatus,
+    IrSignal,
     JsonDict,
     RemoteButton,
     RfStatus,
@@ -77,12 +78,20 @@ class ButtonEvent(HubEvent):
     button: RemoteButton
 
 
+@dataclass(frozen=True, slots=True)
+class IrReceivedEvent(HubEvent):
+    """The Hub captured an infrared signal."""
+
+    signal: IrSignal
+
+
 EVENT_ACTIVITY_STATE: Final = "activity_state"
 EVENT_ACTIVITY_PROGRESS: Final = "activity_progress"
 EVENT_CONFIG_CHANGED: Final = "config_changed"
 EVENT_BT_STATUS: Final = "bt_status"
 EVENT_RF_STATUS: Final = "rf_status"
 EVENT_BUTTON: Final = "button"
+EVENT_IR_RECEIVED: Final = "ir_received"
 
 
 def _activity_state(header: HubEvent, data: JsonDict) -> HubEvent:
@@ -118,6 +127,10 @@ def _button(header: HubEvent, data: JsonDict) -> HubEvent:
     return ButtonEvent(header.type, header.seq, header.ts, button=RemoteButton.from_json(data))
 
 
+def _ir_received(header: HubEvent, data: JsonDict) -> HubEvent:
+    return IrReceivedEvent(header.type, header.seq, header.ts, signal=IrSignal.from_json(data))
+
+
 _PARSERS: Final[Mapping[str, Callable[[HubEvent, JsonDict], HubEvent]]] = {
     EVENT_ACTIVITY_STATE: _activity_state,
     EVENT_ACTIVITY_PROGRESS: _activity_progress,
@@ -125,6 +138,7 @@ _PARSERS: Final[Mapping[str, Callable[[HubEvent, JsonDict], HubEvent]]] = {
     EVENT_BT_STATUS: _bt_status,
     EVENT_RF_STATUS: _rf_status,
     EVENT_BUTTON: _button,
+    EVENT_IR_RECEIVED: _ir_received,
 }
 
 EVENT_TYPES: Final = frozenset(_PARSERS)

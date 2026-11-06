@@ -84,6 +84,8 @@ the milestones.
 | Full state on connect | `snapshot` message | retained topics | 1, 3 |
 | Start, stop, cancel activity; send command with press, hold, release; Bluetooth key; sync; remote wake and sleep | existing REST and WebSocket actions | `<base>/cmd` with correlation id, reply on `<base>/cmd/response` | 1, 3 |
 | Raw infrared send | `POST /api/ir-raw` | `<base>/ir/raw` | 1, 3 |
+| Raw infrared capture | `POST /api/ir-capture`, `ir_received` event | `cmd` action `ir_capture`, `<base>/ir/received` | 1, 3 |
+| Firmware update check and install | `GET /api/update-status`, `POST /api/update-check`, `POST /api/update-apply` (exist) | `cmd` actions `update_check` and `update_apply` | 3 |
 | Authentication | PAT or Bearer on REST and on the WebSocket upgrade | broker credentials | 1 |
 | Liveness | server WebSocket ping every 30 s | LWT on `<base>/status` (exists) | 1 |
 | Discovery | mDNS `_harmony-ng._tcp` with TXT record | same record | 2 |
@@ -148,6 +150,7 @@ and working on this firmware, independent of settings. Flags introduced by this 
 | `ws_keepalive` | The server pings WebSocket clients and reaps dead ones | 1 |
 | `ir_raw` | `POST /api/ir-raw` exists | 1 |
 | `rf_wake` | `POST /api/rf/wake` exists (already on the fork, PR #81) | 1 |
+| `ir_capture` | `POST /api/ir-capture` and the `ir_received` event exist (3.15) | 1 |
 | `mdns` | The mDNS responder is compiled in | 2 |
 | `mqtt_v2` | The MQTT layer publishes the retained state topics and the command channel of milestone 3 | 3 |
 | `legacy` | The Logitech protocol shim is compiled in; whether it is enabled is a setting | 4 |
@@ -203,7 +206,7 @@ Goal: every state change the Hub knows about is emitted once and reaches WebSock
 immediately; the WebSocket is authenticated and kept alive; a client gets the full state on
 connect; raw infrared can be sent; the Hub identifies itself. About 600 to 850 new lines plus tests.
 
-Order of items: 3.1 first, then 3.2 to 3.6 in any order, then 3.7 to 3.13.
+Order of items: 3.1 first, then 3.2 to 3.6 in any order, then 3.7 to 3.14.
 
 ### 3.1 Event bus
 
@@ -520,7 +523,42 @@ sends `RF_MSG_UNIT_ID`, the status shows `remote_id`, a second report with the s
 no push, unpairing clears it. Hub verification: after deploying both bundles, `/api/rf/status`
 shows the remote's unit id within a minute of the remote waking; it survives a Hub restart.
 
-### 3.14 Hub verification for milestone 1
+### 3.14 Infrared capture
+
+`ir_i2s_capture()` in `ir_i2s.c` already records one signal into a timing string but nothing
+exposes it. This item turns it into a capture mode that Home Assistant's infrared receiver entity
+uses to learn codes.
+
+- `POST /api/ir-capture` with `{"enabled":true|false}`. While enabled, `hub_daemon` runs the capture
+  loop on a thread (one more thread is acceptable here: capture blocks on the I2S RX DMA) and emits
+  `HUB_EV_IR_RECEIVED` for every signal, then re-arms. Disabled, the thread exits and the TX handle
+  is released. `GET /api/status` reports the state as `"ir_capture": true|false`; it is false at
+  every daemon start, never persisted.
+- Capture and transmit share the I2S peripheral. While capture is enabled, a send (activity step,
+  `ir-send`, `ir-raw`) pauses the capture, sends, and resumes it; a signal arriving during the send
+  is lost. Sends therefore never fail because capture is on.
+- Event payload:
+
+  ```json
+  {"type":"ir_received","modulation":38000,"timings":[9000,-4500,560,-560,560,-1690],"seq":57,"ts":1762387257}
+  ```
+
+  `timings` are signed microseconds (positive mark, negative space), at most 2048 values;
+  `modulation` is the measured carrier in Hz, or null when the capture path cannot measure it.
+  The parser of the captured string (`F...P...S...`) lives in `ir_encoder.c` next to the encoder,
+  so both directions share one representation.
+- WebSocket action `ir_capture` with `enabled`, acknowledged like the others; the capability flag
+  `ir_capture`.
+- MQTT (milestone 3): `cmd` action `ir_capture`, and the event on `<base>/ir/received`, not
+  retained.
+
+Tests: `tests/test_ir_capture.c` for the string parser with a recorded capture; in the harness,
+`ir-capture` toggles a stub that emits a canned event, and `tests/test_ws_events.py` checks the
+`ir_received` frame and that the status reflects the toggle. Hub verification: enable capture,
+point a remote at the Hub, see the event with a plausible carrier and timings, then send the same
+timings back through `ir-raw` and see the device react.
+
+### 3.15 Hub verification for milestone 1
 
 1. Deploy, then with one WebSocket client (`websocat` or a Python script from the devbox):
    snapshot arrives first; start an activity, see `activity_state` and progress; press keys on the
@@ -608,6 +646,7 @@ the reconnect backoff and the LWT on `<base>/status` stay.
 | `<base>/cmd` | subscribed | 1 | command request, see 5.3 |
 | `<base>/cmd/response` | no | 1 | command reply, see 5.3 |
 | `<base>/ir/raw` | subscribed | 1 | same body as `POST /api/ir-raw`, optional `id` for a reply on `cmd/response` |
+| `<base>/ir/received` | no | 0 | `ir_received` payload while capture is enabled |
 
 <!-- pyml enable md013 -->
 
@@ -651,7 +690,9 @@ the WebSocket actions exactly: `start_activity` (`activity`), `stop_activity`, `
 `repeats`, optional `port` bitmask as `/api/ir-send`), `bt_key` (`key`, `keyAction`, `target`),
 `rf_wake` (`slot`), `rf_sleep` (`slot`), `sync`, `get_snapshot` (reply carries the snapshot),
 `activity_help` (reply carries `activity` and `toggleDevices` as `POST /api/activity/help`),
-`activity_help_answer` (`device`, `on`), `ir_raw` (fields of 3.11).
+`activity_help_answer` (`device`, `on`), `ir_raw` (fields of 3.11), `ir_capture` (`enabled`),
+`update_check` (reply carries the fields of `GET /api/update-status` after the check ran) and
+`update_apply`.
 
 Reply on `<base>/cmd/response`:
 

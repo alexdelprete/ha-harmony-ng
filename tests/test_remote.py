@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from pytest_homeassistant.common import MockConfigEntry, snapshot_platform
+from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed, snapshot_platform
 from syrupy.assertion import SnapshotAssertion
 
 from custom_components.harmony_ng.const import (
@@ -16,8 +17,10 @@ from custom_components.harmony_ng.const import (
 )
 from custom_components.harmony_ng.pyharmonyng import (
     CommandAction,
+    Device,
     HarmonyNgBusyError,
     HarmonyNgConnectionError,
+    Inventory,
 )
 from homeassistant.components.remote import (
     ATTR_ACTIVITY,
@@ -29,12 +32,19 @@ from homeassistant.components.remote import (
     DOMAIN as REMOTE_DOMAIN,
     SERVICE_SEND_COMMAND,
 )
-from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_OFF, SERVICE_TURN_ON, Platform
+from homeassistant.const import (
+    ATTR_ENTITY_ID,
+    SERVICE_TURN_OFF,
+    SERVICE_TURN_ON,
+    STATE_UNAVAILABLE,
+    Platform,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.util import dt as dt_util
 
-from .conftest import FakeTransport
+from .conftest import HUB_ID, FakeTransport
 from .pyharmonyng.conftest import load_frames
 
 ENTITY = "remote.living_room_hub"
@@ -216,3 +226,99 @@ async def test_sync_service(
 ) -> None:
     await hass.services.async_call(DOMAIN, SERVICE_SYNC, {ATTR_ENTITY_ID: ENTITY}, blocking=True)
     assert fake_transport.commands() == [("push_config", ())]
+
+
+TV = "remote.living_room_hub_lg_oled_tv"
+
+
+async def test_device_remotes(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_transport: FakeTransport,
+    entity_registry: er.EntityRegistry,
+) -> None:
+    state = hass.states.get(TV)
+    assert state.state == "unknown"
+    assert state.attributes["commands"][0] == "PowerToggle"
+    assert state.attributes["manufacturer"] == "LG"
+    assert state.attributes["assumed_state"] is True
+    entry = entity_registry.async_get(TV)
+    assert entry is not None
+    assert entry.unique_id == f"{HUB_ID}:device:70321456_remote"
+    device_registry = dr.async_get(hass)
+    child = device_registry.async_get_child_device_by_identifier(
+        (DOMAIN, f"{HUB_ID}:device:70321456"), init_integration.entry_id
+    )
+    assert child is not None
+    hub = device_registry.async_get_device_by_identifier(
+        (DOMAIN, HUB_ID), init_integration.entry_id
+    )
+    assert child.parent_device_id == hub.id
+    assert child.name == "LG OLED TV"
+
+    await hass.services.async_call(
+        REMOTE_DOMAIN, SERVICE_TURN_ON, {ATTR_ENTITY_ID: TV}, blocking=True
+    )
+    await hass.services.async_call(
+        REMOTE_DOMAIN, SERVICE_TURN_OFF, {ATTR_ENTITY_ID: TV}, blocking=True
+    )
+    await hass.services.async_call(
+        REMOTE_DOMAIN,
+        SERVICE_TURN_ON,
+        {ATTR_ENTITY_ID: "remote.living_room_hub_soundbar"},
+        blocking=True,
+    )
+    await hass.services.async_call(
+        REMOTE_DOMAIN,
+        SERVICE_TURN_OFF,
+        {ATTR_ENTITY_ID: "remote.living_room_hub_soundbar"},
+        blocking=True,
+    )
+    with pytest.raises(ServiceValidationError, match="has no power command"):
+        await hass.services.async_call(
+            REMOTE_DOMAIN,
+            SERVICE_TURN_ON,
+            {ATTR_ENTITY_ID: "remote.living_room_hub_apple_tv"},
+            blocking=True,
+        )
+    sleep = AsyncMock()
+    with patch("custom_components.harmony_ng.remote.asyncio.sleep", sleep):
+        await hass.services.async_call(
+            REMOTE_DOMAIN,
+            SERVICE_SEND_COMMAND,
+            {ATTR_ENTITY_ID: TV, ATTR_COMMAND: ["Mute"], ATTR_HOLD_SECS: 0.5},
+            blocking=True,
+        )
+    await hass.services.async_call(DOMAIN, SERVICE_SYNC, {ATTR_ENTITY_ID: TV}, blocking=True)
+    assert fake_transport.commands() == [
+        ("send_command", ("70321456", "PowerToggle", CommandAction.TAP, 1)),
+        ("send_command", ("70321456", "PowerToggle", CommandAction.TAP, 1)),
+        ("send_command", ("70321457", "PowerOn", CommandAction.TAP, 1)),
+        ("send_command", ("70321457", "PowerOff", CommandAction.TAP, 1)),
+        ("send_command", ("70321456", "Mute", CommandAction.PRESS, 1)),
+        ("send_command", ("70321456", "Mute", CommandAction.RELEASE, 1)),
+        ("push_config", ()),
+    ]
+
+
+async def test_device_remote_follows_inventory(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    fake_transport.inventory = Inventory(
+        devices=(
+            *fake_transport.inventory.devices[:2],
+            Device("9", "Projector", "Projector", "Epson", "X", 0, ("PowerToggle",)),
+        ),
+        version=None,
+    )
+    fake_transport.push({"type": "config_changed", "files": ["devices"], "seq": 91, "ts": 1})
+    await hass.async_block_till_done()
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=5))
+    await hass.async_block_till_done()
+    assert hass.states.get("remote.living_room_hub_apple_tv").state == STATE_UNAVAILABLE
+    assert hass.states.get("remote.living_room_hub_projector").state == "unknown"
+    entity = hass.data["entity_components"]["remote"].get_entity("remote.living_room_hub_apple_tv")
+    with pytest.raises(ServiceValidationError, match="No device named 70321458"):
+        await entity.async_send_command(["Home"])
+    with pytest.raises(ServiceValidationError, match="No device named 70321458"):
+        await entity.async_turn_on()

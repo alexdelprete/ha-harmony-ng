@@ -32,6 +32,7 @@ from custom_components.harmony_ng.pyharmonyng import (
     KeyAction,
     RfStatus,
     Snapshot,
+    UpdateStatus,
     parse,
 )
 from homeassistant.components import mqtt
@@ -59,6 +60,7 @@ TOPIC_BUTTON: Final = "remote/+/button"
 TOPIC_CMD: Final = "cmd"
 TOPIC_CMD_RESPONSE: Final = "cmd/response"
 TOPIC_IR_RAW: Final = "ir/raw"
+TOPIC_IR_RECEIVED: Final = "ir/received"
 
 STATE_TOPICS: Final = (TOPIC_HUB, TOPIC_ACTIVITY_STATE, TOPIC_BT, TOPIC_RF)
 EVENT_TOPICS: Final = (TOPIC_ACTIVITY_STATE, TOPIC_PROGRESS, TOPIC_BT, TOPIC_RF, TOPIC_BUTTON)
@@ -273,6 +275,18 @@ class MqttTransport:
         """Answer the Help question for one device."""
         await self._command("activity_help_answer", device=device_id, on=on)
 
+    async def update_check(self) -> UpdateStatus:
+        """Ask the Hub for a release check; the reply carries the versions."""
+        return UpdateStatus.from_json(await self._command("update_check"))
+
+    async def update_apply(self) -> None:
+        """Install the available release."""
+        await self._command("update_apply")
+
+    async def ir_capture(self, enabled: bool) -> None:
+        """Start or stop infrared capture."""
+        await self._command("ir_capture", enabled=enabled)
+
     # Internals
 
     async def _subscribe_all(self) -> None:
@@ -287,6 +301,7 @@ class MqttTransport:
             TOPIC_INVENTORY_INDEX: self._handle_inventory,
             TOPIC_INVENTORY_DEVICE: self._handle_inventory,
             TOPIC_BUTTON: self._handle_event,
+            TOPIC_IR_RECEIVED: self._handle_event,
             TOPIC_CMD_RESPONSE: self._handle_response,
         }
         for suffix, handler in subscriptions.items():

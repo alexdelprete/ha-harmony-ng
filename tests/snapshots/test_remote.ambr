@@ -62,3 +62,186 @@
     'state': 'off',
   })
 # ---
+# name: test_entity[remote.living_room_hub_apple_tv-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <ChildDeviceEntry identifiers=[('harmony_ng', '20140101120000-000001:device:70321458')]>,
+    'disabled_by': None,
+    'domain': 'remote',
+    'entity_category': None,
+    'entity_id': 'remote.living_room_hub_apple_tv',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': None,
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': None,
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'remote',
+    'unique_id': '20140101120000-000001:device:70321458_remote',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entity[remote.living_room_hub_apple_tv-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.ASSUMED_STATE: 'assumed_state'>: True,
+      'commands': list([
+        'Home',
+        'Select',
+        'Menu',
+      ]),
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Apple TV',
+      'manufacturer': 'Apple',
+      'model': '4K',
+      <EntityStateAttribute.SUPPORTED_FEATURES: 'supported_features'>: <RemoteEntityFeature: 0>,
+      'type': 'Streaming Media Player',
+    }),
+    'context': <ANY>,
+    'entity_id': 'remote.living_room_hub_apple_tv',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_entity[remote.living_room_hub_lg_oled_tv-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <ChildDeviceEntry identifiers=[('harmony_ng', '20140101120000-000001:device:70321456')]>,
+    'disabled_by': None,
+    'domain': 'remote',
+    'entity_category': None,
+    'entity_id': 'remote.living_room_hub_lg_oled_tv',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': None,
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': None,
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'remote',
+    'unique_id': '20140101120000-000001:device:70321456_remote',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entity[remote.living_room_hub_lg_oled_tv-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.ASSUMED_STATE: 'assumed_state'>: True,
+      'commands': list([
+        'PowerToggle',
+        'VolumeUp',
+        'VolumeDown',
+        'Mute',
+        'InputHdmi2',
+      ]),
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'LG OLED TV',
+      'manufacturer': 'LG',
+      'model': 'OLED65C2',
+      <EntityStateAttribute.SUPPORTED_FEATURES: 'supported_features'>: <RemoteEntityFeature: 0>,
+      'type': 'Television',
+    }),
+    'context': <ANY>,
+    'entity_id': 'remote.living_room_hub_lg_oled_tv',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_entity[remote.living_room_hub_soundbar-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <ChildDeviceEntry identifiers=[('harmony_ng', '20140101120000-000001:device:70321457')]>,
+    'disabled_by': None,
+    'domain': 'remote',
+    'entity_category': None,
+    'entity_id': 'remote.living_room_hub_soundbar',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': None,
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': None,
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'remote',
+    'unique_id': '20140101120000-000001:device:70321457_remote',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entity[remote.living_room_hub_soundbar-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.ASSUMED_STATE: 'assumed_state'>: True,
+      'commands': list([
+        'PowerOn',
+        'PowerOff',
+        'VolumeUp',
+        'VolumeDown',
+      ]),
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Soundbar',
+      'manufacturer': 'Sonos',
+      'model': 'Arc',
+      <EntityStateAttribute.SUPPORTED_FEATURES: 'supported_features'>: <RemoteEntityFeature: 0>,
+      'type': 'Audio',
+    }),
+    'context': <ANY>,
+    'entity_id': 'remote.living_room_hub_soundbar',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---

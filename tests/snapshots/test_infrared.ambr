@@ -152,3 +152,54 @@
     'state': 'unknown',
   })
 # ---
+# name: test_entities[infrared.living_room_hub_receiver-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <DeviceEntry identifiers=[('harmony_ng', '20140101120000-000001')]>,
+    'disabled_by': None,
+    'domain': 'infrared',
+    'entity_category': None,
+    'entity_id': 'infrared.living_room_hub_receiver',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Receiver',
+    'options': dict({
+    }),
+    'original_device_class': <InfraredDeviceClass.RECEIVER: 'receiver'>,
+    'original_icon': None,
+    'original_name': 'Receiver',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'ir_receiver',
+    'unique_id': '20140101120000-000001_ir_receiver',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[infrared.living_room_hub_receiver-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'receiver',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living Room Hub Receiver',
+    }),
+    'context': <ANY>,
+    'entity_id': 'infrared.living_room_hub_receiver',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unavailable',
+  })
+# ---

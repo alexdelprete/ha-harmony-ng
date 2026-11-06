@@ -17,6 +17,7 @@ from custom_components.harmony_ng.pyharmonyng import (
     Inventory,
     KeyAction,
     Snapshot,
+    UpdateStatus,
 )
 
 type EventCallback = Callable[[HubEvent], None]
@@ -103,3 +104,12 @@ class HarmonyNgTransport(Protocol):
 
     async def activity_help_answer(self, device_id: str, on: bool) -> None:
         """Answer the Help question for one device."""
+
+    async def update_check(self) -> UpdateStatus:
+        """Ask the Hub for a release check and return the versions."""
+
+    async def update_apply(self) -> None:
+        """Install the available release."""
+
+    async def ir_capture(self, enabled: bool) -> None:
+        """Start or stop infrared capture."""

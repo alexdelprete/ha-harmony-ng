@@ -537,3 +537,38 @@ class HelpResult:
                 if isinstance(item, Mapping)
             ),
         )
+
+
+@dataclass(frozen=True, slots=True)
+class UpdateStatus:
+    """Firmware versions as the Hub's update endpoints report them."""
+
+    current_version: str
+    latest_version: str | None
+    update_available: bool
+    message: str
+
+    @classmethod
+    def from_json(cls, data: JsonDict) -> Self:
+        """Build from `GET /api/update-status` or the reply of `/api/update-check`."""
+        latest = _opt_str(data, "remote_version", "latest_version")
+        return cls(
+            current_version=_str(data, "current_version", "version").lstrip("vV"),
+            latest_version=latest.lstrip("vV") if latest else None,
+            update_available=_bool(data, "update_available", "has_update"),
+            message=_str(data, "message"),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class IrSignal:
+    """An infrared signal the Hub captured: signed timings and the carrier."""
+
+    timings: tuple[int, ...]
+    modulation: int | None
+
+    @classmethod
+    def from_json(cls, data: JsonDict) -> Self:
+        """Build from an `ir_received` event."""
+        timings = tuple(int(v) for v in _list(data, "timings") if isinstance(v, int | float))
+        return cls(timings=timings, modulation=_opt_int(data, "modulation", "frequency"))

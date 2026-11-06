@@ -23,7 +23,7 @@ from .test_transport_mqtt import (  # noqa: F401
     setup_with_retained,
 )
 
-VOLATILE = {"uptime"}
+VOLATILE = {"uptime", "firmware_update"}
 
 
 def entity_states(hass: HomeAssistant) -> dict[str, tuple[str, dict[str, Any]]]:

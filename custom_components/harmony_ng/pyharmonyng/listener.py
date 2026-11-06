@@ -222,6 +222,10 @@ class HarmonyNgListener:
             fields["target"] = target
         await self.send_action("bt_key", **fields)
 
+    async def ir_capture(self, enabled: bool) -> None:
+        """Start or stop infrared capture through the socket."""
+        await self.send_action("ir_capture", enabled=enabled)
+
     async def _connect(self) -> aiohttp.ClientWebSocketResponse:
         params = {"token": self._token} if self._token else None
         try:

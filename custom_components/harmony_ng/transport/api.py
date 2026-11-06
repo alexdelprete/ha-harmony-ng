@@ -17,6 +17,7 @@ from custom_components.harmony_ng.pyharmonyng import (
     Inventory,
     KeyAction,
     Snapshot,
+    UpdateStatus,
 )
 
 from . import ConnectionCallback, EventCallback, SnapshotCallback
@@ -197,3 +198,25 @@ class ApiTransport:
     async def activity_help_answer(self, device_id: str, on: bool) -> None:
         """Answer the Help question for one device."""
         await self._client.activity_help_answer(device_id, on=on)
+
+    async def update_check(self) -> UpdateStatus:
+        """Trigger the Hub's release check, then read the versions it knows."""
+        check = await self._client.update_check()
+        status = await self._client.get_update_status()
+        return UpdateStatus(
+            current_version=status.current_version or check.current_version,
+            latest_version=status.latest_version,
+            update_available=status.update_available or check.update_available,
+            message=check.message or status.message,
+        )
+
+    async def update_apply(self) -> None:
+        """Install the available release over REST."""
+        await self._client.update_apply()
+
+    async def ir_capture(self, enabled: bool) -> None:
+        """Start or stop infrared capture."""
+        if self._listener is not None and self._listener.connected:
+            await self._listener.ir_capture(enabled)
+            return
+        await self._client.ir_capture(enabled)

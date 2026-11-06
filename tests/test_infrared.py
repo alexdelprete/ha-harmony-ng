@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from unittest.mock import patch
 
 from infrared_protocols.commands.nec import NECCommand
@@ -74,3 +75,64 @@ async def test_needs_capability(
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
     assert hass.states.get(FRONT).state == STATE_UNAVAILABLE
+
+
+RECEIVER = "infrared.living_room_hub_receiver"
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_receiver(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    data = load_json("snapshot")
+    data["hub"]["capabilities"].append("ir_capture")
+    fake_transport.snapshot = Snapshot.from_json(data)
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get(RECEIVER).state == "unknown"
+    assert fake_transport.commands() == [("ir_capture", (True,))]
+
+    received: list[Any] = []
+    entity = hass.data["entity_components"]["infrared"].get_entity(RECEIVER)
+    entity.async_subscribe_received_signal(received.append)
+    fake_transport.push_frames("ws_ir_received")
+    await hass.async_block_till_done()
+    assert hass.states.get(RECEIVER).state != "unknown"
+    assert received[0].modulation == 38000
+    assert received[0].timings == [9000, -4500, 560, -560, 560, -1690, 560, -39000]
+
+    await hass.config_entries.async_unload(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert fake_transport.commands()[-1] == ("ir_capture", (False,))
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_receiver_without_capability(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    assert hass.states.get(RECEIVER).state == STATE_UNAVAILABLE
+    assert ("ir_capture", (True,)) not in fake_transport.commands()
+
+
+async def test_receiver_disabled_by_default(
+    hass: HomeAssistant, init_integration: MockConfigEntry, entity_registry: er.EntityRegistry
+) -> None:
+    assert entity_registry.async_get(RECEIVER).disabled
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_receiver_capture_error_is_logged(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    fake_transport: FakeTransport,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    data = load_json("snapshot")
+    data["hub"]["capabilities"].append("ir_capture")
+    fake_transport.snapshot = Snapshot.from_json(data)
+    fake_transport.errors["ir_capture"] = HarmonyNgConnectionError("dropped")
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert "Could not start infrared capture" in caplog.text
