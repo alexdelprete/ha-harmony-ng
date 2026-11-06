@@ -51,6 +51,9 @@ A Home Assistant custom integration for Harmony NG.
 
 - **Type**: Hub
 - **IoT Class**: Local Polling
+- **Marketplace categories**: `buttons_remotes` <!-- TODO: pick one to three real categories; the
+  known ids are the keys of `integration_category` in core's
+  homeassistant/components/homeassistant/strings.json (e.g. `energy.meters_monitoring`) -->
 
 ### File Structure
 
@@ -60,6 +63,7 @@ custom_components/harmony_ng/
 ├── config_flow.py       # Config flow
 ├── const.py             # Constants
 ├── coordinator.py       # Data coordinator
+├── entity.py            # Base entity (DeviceInfo, entity lifecycle hooks)
 ├── sensor.py            # Sensor entities
 ├── diagnostics.py       # Diagnostics
 ├── device_trigger.py    # Device triggers
@@ -95,6 +99,9 @@ custom_components/harmony_ng/
 
 1. **`api.py`** — Device communication layer
    <!-- TODO: Document protocol (REST, MQTT, Modbus, Telnet, etc.) and connection management -->
+
+1. **`entity.py`** — Base entity: unique ids, `DeviceInfo` (hub device or a sub-device linked
+   with `via_device_id`), entity lifecycle hooks
 
 1. **`sensor.py`** — Sensor entity platform
 
@@ -769,4 +776,4 @@ it will not be touched by `repo-sync.py`.
 
 ## Reference Documentation
 
-- [Home Assistant Developer Docs](https://developers.home-assistant.io/)
+- [Home Assistant Contributor Docs](https://contributors.home-assistant.io/)
