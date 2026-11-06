@@ -1,5 +1,5 @@
 # serializer version: 1
-# name: test_entities[button.harmony_ultimate_1_sleep-entry]
+# name: test_entities[button.harmony_ultimate_sleep-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
       None,
@@ -13,7 +13,7 @@
     'disabled_by': None,
     'domain': 'button',
     'entity_category': <EntityCategory.CONFIG: 'config'>,
-    'entity_id': 'button.harmony_ultimate_1_sleep',
+    'entity_id': 'button.harmony_ultimate_sleep',
     'has_entity_name': True,
     'hidden_by': None,
     'icon': None,
@@ -36,20 +36,20 @@
     'unit_of_measurement': None,
   })
 # ---
-# name: test_entities[button.harmony_ultimate_1_sleep-state]
+# name: test_entities[button.harmony_ultimate_sleep-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Harmony Ultimate 1 Sleep',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Harmony Ultimate Sleep',
     }),
     'context': <ANY>,
-    'entity_id': 'button.harmony_ultimate_1_sleep',
+    'entity_id': 'button.harmony_ultimate_sleep',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
     'state': 'unknown',
   })
 # ---
-# name: test_entities[button.harmony_ultimate_1_wake-entry]
+# name: test_entities[button.harmony_ultimate_wake-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
       None,
@@ -63,7 +63,7 @@
     'disabled_by': None,
     'domain': 'button',
     'entity_category': <EntityCategory.CONFIG: 'config'>,
-    'entity_id': 'button.harmony_ultimate_1_wake',
+    'entity_id': 'button.harmony_ultimate_wake',
     'has_entity_name': True,
     'hidden_by': None,
     'icon': None,
@@ -86,13 +86,13 @@
     'unit_of_measurement': None,
   })
 # ---
-# name: test_entities[button.harmony_ultimate_1_wake-state]
+# name: test_entities[button.harmony_ultimate_wake-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
-      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Harmony Ultimate 1 Wake',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Harmony Ultimate Wake',
     }),
     'context': <ANY>,
-    'entity_id': 'button.harmony_ultimate_1_wake',
+    'entity_id': 'button.harmony_ultimate_wake',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,

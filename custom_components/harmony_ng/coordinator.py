@@ -61,6 +61,21 @@ type ButtonListener = Callable[[RemoteButton], None]
 type IrListener = Callable[[IrSignal], None]
 
 
+DEFAULT_REMOTE_NAME = "Harmony remote"
+
+
+def remote_device_name(rf: RfStatus, slot: int) -> str:
+    """Name a remote after its product, with the slot when another remote shares it."""
+    rf_slot = rf.slot(slot)
+    product = rf_slot.product_name if rf_slot else None
+    base = product or DEFAULT_REMOTE_NAME
+    shared = any(
+        other.slot != slot and other.active and (other.product_name or DEFAULT_REMOTE_NAME) == base
+        for other in rf.slots
+    )
+    return f"{base} {slot}" if shared else base
+
+
 @dataclass(frozen=True, slots=True)
 class HubState:
     """Everything the entities read, replaced as a whole on every event."""
@@ -243,12 +258,13 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         hub = dr.async_get(self.hass).async_get_device_by_identifier(
             (DOMAIN, self.hub_id), self.config_entry.entry_id
         )
-        model = rf_slot.model if rf_slot and rf_slot.model not in ("", "None") else None
+        rf = state.rf if state else None
+        product = rf_slot.product_name if rf_slot else None
         return DeviceInfo(
             identifiers={(DOMAIN, self.remote_identifier(slot))},
             manufacturer=MANUFACTURER,
-            model=model,
-            name=f"{model or 'Harmony remote'} {slot}",
+            model=product,
+            name=remote_device_name(rf, slot) if rf else DEFAULT_REMOTE_NAME,
             serial_number=rf_slot.remote_id if rf_slot else None,
             sw_version=rf_slot.sw_version if rf_slot else None,
             via_device_id=hub.id if hub is not None else None,
@@ -308,6 +324,7 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         new_state = self._apply_event(state, event)
         if isinstance(event, RfStatusEvent):
             self._migrate_remote_identities(state.rf, new_state.rf)
+            self._refresh_remote_devices(state.rf, new_state.rf)
         if isinstance(event, ButtonEvent):
             for listener in list(self._button_listeners.get(event.button.slot, ())):
                 listener(event.button)
@@ -339,6 +356,7 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         new_state = self._state_from_snapshot(snapshot, activities, inventory)
         if state is not None:
             self._migrate_remote_identities(state.rf, new_state.rf)
+            self._refresh_remote_devices(state.rf, new_state.rf)
         self._async_refresh_issues(legacy_enabled=snapshot.hub.legacy_enabled)
         self._set_state(new_state)
         if snapshot.gap or (
@@ -420,6 +438,36 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
                 migrated = True
         if migrated:
             self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
+
+    def _refresh_remote_devices(self, old: RfStatus, new: RfStatus) -> None:
+        """Update a remote's model and name when the Hub learns its product.
+
+        The device info only applies when entities are added, so a product that
+        arrives later (a firmware update, a remote reporting its skin id) is
+        written to the registry here. A name the user set stays in front.
+        """
+        device_registry = dr.async_get(self.hass)
+        for new_slot in new.slots:
+            if not new_slot.active:
+                continue
+            name = remote_device_name(new, new_slot.slot)
+            old_slot = old.slot(new_slot.slot)
+            if (
+                old_slot is not None
+                and old_slot.product_name == new_slot.product_name
+                and remote_device_name(old, new_slot.slot) == name
+            ):
+                continue
+            identifier = new_slot.remote_id or f"{self.hub_id}:slot{new_slot.slot}"
+            device = device_registry.async_get_device_by_identifier(
+                (DOMAIN, identifier), self.config_entry.entry_id
+            )
+            if device is None:
+                continue
+            if device.model != new_slot.product_name or device.name != name:
+                device_registry.async_update_device(
+                    device.id, model=new_slot.product_name, name=name
+                )
 
     def _migrate_slot(self, slot: int, remote_id: str) -> bool:
         old_identifier = f"{self.hub_id}:slot{slot}"

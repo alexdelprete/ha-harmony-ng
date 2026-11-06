@@ -16,7 +16,7 @@ from .conftest import FakeTransport
 from .pyharmonyng.conftest import load_frames
 
 BUSY = "binary_sensor.living_room_hub_busy"
-SYNC = "binary_sensor.harmony_ultimate_1_configuration_out_of_sync"
+SYNC = "binary_sensor.harmony_ultimate_configuration_out_of_sync"
 APPLE_TV = "binary_sensor.living_room_hub_apple_tv_connected"
 SHIELD = "binary_sensor.living_room_hub_shield_connected"
 

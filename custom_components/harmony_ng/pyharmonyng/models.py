@@ -340,6 +340,13 @@ class Inventory:
         return next((device for device in self.devices if device.name.casefold() == wanted), None)
 
 
+# Screenless remotes run stock firmware; the Hub identifies them by EquadID, reliably.
+SCREENLESS_PRODUCT_NAMES: dict[str, str] = {
+    "companion": "Harmony Companion",
+    "smart_control": "Harmony Smart Control",
+}
+
+
 @dataclass(frozen=True, slots=True)
 class RfSlot:
     """One RF remote slot of the Hub."""
@@ -348,6 +355,9 @@ class RfSlot:
     active: bool
     remote_id: str | None
     model: str
+    model_name: str | None
+    skin: int | None
+    equad_id: int | None
     has_screen: bool
     battery_percent: int | None
     charging: bool | None
@@ -368,6 +378,9 @@ class RfSlot:
             active=_bool(data, "active"),
             remote_id=_opt_str(data, "remote_id"),
             model=_str(data, "model"),
+            model_name=_opt_str(data, "model_name"),
+            skin=_opt_int(data, "skin"),
+            equad_id=_opt_int(data, "equad_id"),
             has_screen=_bool(data, "has_screen"),
             battery_percent=_opt_int(battery, "percent"),
             charging=bool(battery["charging"]) if battery.get("charging") is not None else None,
@@ -378,6 +391,17 @@ class RfSlot:
             sw_version=_opt_str(data, "sw_version", "version", "firmware"),
             last_seen_s=_opt_int(link, "last_seen_s"),
         )
+
+    @property
+    def product_name(self) -> str | None:
+        """Return the remote's product name when the Hub knows it for certain.
+
+        Firmware that reads the remote's skin id reports `model_name`. Older
+        firmware reports `elite` for every touchscreen remote, a guess that also
+        covers the Ultimate family, so only the screenless models it identifies by
+        EquadID are named without `model_name`.
+        """
+        return self.model_name or SCREENLESS_PRODUCT_NAMES.get(self.model)
 
 
 @dataclass(frozen=True, slots=True)

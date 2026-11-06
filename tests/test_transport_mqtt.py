@@ -194,7 +194,7 @@ async def test_setup_and_state(hass: HomeAssistant, mqtt_entry: MockConfigEntry)
         "Watch TV",
         "Listen to Music",
     ]
-    assert hass.states.get("sensor.harmony_ultimate_1_battery").state == "87"
+    assert hass.states.get("sensor.harmony_ultimate_battery").state == "87"
     assert coordinator.data.inventory.version == VERSION
     assert [d.name for d in coordinator.data.inventory.devices] == [
         "LG OLED TV",
@@ -217,7 +217,7 @@ async def test_setup_and_state(hass: HomeAssistant, mqtt_entry: MockConfigEntry)
         hass, f"{BASE}/remote/1/button", json.dumps(load_frames("ws_button")[0])
     )
     await hass.async_block_till_done()
-    assert hass.states.get("event.harmony_ultimate_1_button").attributes["button"] == "VolumeUp"
+    assert hass.states.get("event.harmony_ultimate_button").attributes["button"] == "VolumeUp"
 
     async_fire_mqtt_message(hass, f"{BASE}/progress", "not json")
     async_fire_mqtt_message(hass, f"{BASE}/progress", json.dumps({"type": "unknown"}))

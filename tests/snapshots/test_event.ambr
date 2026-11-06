@@ -1,5 +1,5 @@
 # serializer version: 1
-# name: test_entity[event.harmony_ultimate_1_button-entry]
+# name: test_entity[event.harmony_ultimate_button-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
       None,
@@ -18,7 +18,7 @@
     'disabled_by': None,
     'domain': 'event',
     'entity_category': None,
-    'entity_id': 'event.harmony_ultimate_1_button',
+    'entity_id': 'event.harmony_ultimate_button',
     'has_entity_name': True,
     'hidden_by': None,
     'icon': None,
@@ -41,7 +41,7 @@
     'unit_of_measurement': None,
   })
 # ---
-# name: test_entity[event.harmony_ultimate_1_button-state]
+# name: test_entity[event.harmony_ultimate_button-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'button',
@@ -50,10 +50,10 @@
         'press',
         'release',
       ]),
-      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Harmony Ultimate 1 Button',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Harmony Ultimate Button',
     }),
     'context': <ANY>,
-    'entity_id': 'event.harmony_ultimate_1_button',
+    'entity_id': 'event.harmony_ultimate_button',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,

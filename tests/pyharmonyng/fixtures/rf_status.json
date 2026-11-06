@@ -14,7 +14,10 @@
       "address": "12345678",
       "rf_address": "12345678",
       "remote_id": "20141001120000-000002",
-      "model": "Harmony Ultimate",
+      "model": "ultimate",
+      "model_name": "Harmony Ultimate",
+      "skin": 100,
+      "equad_id": 16417,
       "has_screen": true,
       "supports_ota": true,
       "sw_version": "2.2.0",
@@ -40,7 +43,10 @@
       "active": false,
       "address": "None",
       "rf_address": "None",
-      "model": "None",
+      "model": "unknown",
+      "model_name": null,
+      "skin": null,
+      "equad_id": null,
       "has_screen": false,
       "supports_ota": false
     }
