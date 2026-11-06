@@ -2,21 +2,30 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Generator
 from ipaddress import ip_address
+import json
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from pytest_homeassistant.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry, async_fire_mqtt_message
 
+from custom_components.harmony_ng.config_flow import (
+    ERROR_MQTT_NOT_CONFIGURED,
+    ProbeError,
+    async_probe_mqtt,
+)
 from custom_components.harmony_ng.const import (
     CONF_DEFAULT_ACTIVITY,
     CONF_DELAY_SECS,
+    CONF_MQTT_BASE_TOPIC,
     CONF_TOKEN,
     CONF_TRANSPORT,
     DOMAIN,
     TRANSPORT_API,
+    TRANSPORT_MQTT,
     ZEROCONF_TYPE,
 )
 from custom_components.harmony_ng.pyharmonyng import (
@@ -26,6 +35,7 @@ from custom_components.harmony_ng.pyharmonyng import (
     HarmonyNgUnsupportedError,
     HubStatus,
 )
+from homeassistant.components import mqtt
 from homeassistant.config_entries import SOURCE_USER, SOURCE_ZEROCONF
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
@@ -34,6 +44,9 @@ from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 
 from .conftest import HOST, HUB_ID
 from .pyharmonyng.conftest import load_json
+from .test_transport_mqtt import no_lingering_timers  # noqa: F401
+
+API = {CONF_TRANSPORT: TRANSPORT_API}
 
 TOKEN = "pat_secret"  # noqa: S105
 
@@ -72,6 +85,9 @@ async def test_user_flow(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_HOST: HOST, CONF_PORT: 8089}
     )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "transport"
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], API)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Living Room Hub"
     assert result["data"] == {
@@ -79,6 +95,7 @@ async def test_user_flow(
         CONF_PORT: 8089,
         CONF_TOKEN: None,
         CONF_TRANSPORT: TRANSPORT_API,
+        CONF_MQTT_BASE_TOPIC: None,
     }
     assert result["result"].unique_id == HUB_ID
     assert mock_setup_entry.call_count == 1
@@ -108,6 +125,8 @@ async def test_user_flow_errors(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_HOST: HOST, CONF_PORT: 8089}
     )
+    assert result["step_id"] == "transport"
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], API)
     assert result["type"] is FlowResultType.CREATE_ENTRY
 
 
@@ -128,6 +147,8 @@ async def test_user_flow_with_auth(
 
     mock_client.side_effect = None
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_TOKEN: TOKEN})
+    assert result["step_id"] == "transport"
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], API)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_TOKEN] == TOKEN
 
@@ -159,6 +180,8 @@ async def test_zeroconf_flow(
     assert result["description_placeholders"] == {"name": "Living Room Hub", "host": HOST}
 
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    assert result["step_id"] == "transport"
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], API)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Living Room Hub"
     assert result["result"].unique_id == HUB_ID
@@ -174,6 +197,8 @@ async def test_zeroconf_flow_with_auth(
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["step_id"] == "auth"
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_TOKEN: TOKEN})
+    assert result["step_id"] == "transport"
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], API)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_TOKEN] == TOKEN
 
@@ -276,7 +301,7 @@ async def test_reconfigure_flow(
 
     mock_client.side_effect = HarmonyNgAuthError("token required")
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_HOST: "192.0.2.50", CONF_PORT: 8089}
+        result["flow_id"], {CONF_HOST: "192.0.2.50", CONF_PORT: 8089, **API}
     )
     assert result["errors"] == {"base": "invalid_auth"}
 
@@ -285,13 +310,13 @@ async def test_reconfigure_flow(
         {**load_json("status"), "hub_id": "20140101120000-000009"}
     )
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_HOST: "192.0.2.50", CONF_PORT: 8089, CONF_TOKEN: TOKEN}
+        result["flow_id"], {CONF_HOST: "192.0.2.50", CONF_PORT: 8089, CONF_TOKEN: TOKEN, **API}
     )
     assert result["errors"] == {"base": "hub_mismatch"}
 
     mock_client.return_value = HubStatus.from_json(load_json("status"))
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_HOST: "192.0.2.50", CONF_PORT: 8089, CONF_TOKEN: TOKEN}
+        result["flow_id"], {CONF_HOST: "192.0.2.50", CONF_PORT: 8089, CONF_TOKEN: TOKEN, **API}
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
@@ -331,3 +356,131 @@ async def test_options_flow_without_runtime(
     assert schema is not None
     selector = next(value for key, value in schema.schema.items() if key == CONF_DEFAULT_ACTIVITY)
     assert [o["value"] for o in selector.config["options"]] == ["previous"]
+
+
+@pytest.fixture
+def mock_mqtt_probe() -> Generator[AsyncMock]:
+    """Replace the MQTT probe of the transport step."""
+    status = HubStatus.from_json({**load_json("status"), "capabilities": ["events", "mqtt_v2"]})
+    with patch(
+        "custom_components.harmony_ng.config_flow.async_probe_mqtt", AsyncMock(return_value=status)
+    ) as probe:
+        yield probe
+
+
+async def test_transport_mqtt(
+    hass: HomeAssistant, mock_client: AsyncMock, mock_setup_entry: Any, mock_mqtt_probe: AsyncMock
+) -> None:
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: HOST, CONF_PORT: 8089}
+    )
+    assert result["step_id"] == "transport"
+
+    mock_mqtt_probe.side_effect = ProbeError(ERROR_MQTT_NOT_CONFIGURED)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_TRANSPORT: TRANSPORT_MQTT, CONF_MQTT_BASE_TOPIC: "harmony/hub"}
+    )
+    assert result["errors"] == {"base": "mqtt_not_configured"}
+
+    mock_mqtt_probe.side_effect = None
+    mock_mqtt_probe.return_value = HubStatus.from_json(
+        {**load_json("status"), "hub_id": "20140101120000-000009", "capabilities": ["mqtt_v2"]}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_TRANSPORT: TRANSPORT_MQTT, CONF_MQTT_BASE_TOPIC: "harmony/hub"}
+    )
+    assert result["errors"] == {"base": "hub_mismatch"}
+
+    mock_mqtt_probe.return_value = HubStatus.from_json(
+        {**load_json("status"), "capabilities": ["mqtt_v2"]}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_TRANSPORT: TRANSPORT_MQTT, CONF_MQTT_BASE_TOPIC: "home/hub"}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_TRANSPORT] == TRANSPORT_MQTT
+    assert result["data"][CONF_MQTT_BASE_TOPIC] == "home/hub"
+    mock_mqtt_probe.assert_awaited_with(hass, "home/hub")
+
+
+async def test_reconfigure_switches_transport(
+    hass: HomeAssistant,
+    mock_client: AsyncMock,
+    mock_setup_entry: Any,
+    mock_mqtt_probe: AsyncMock,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    mock_config_entry.add_to_hass(hass)
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {
+            CONF_HOST: HOST,
+            CONF_PORT: 8089,
+            CONF_TRANSPORT: TRANSPORT_MQTT,
+            CONF_MQTT_BASE_TOPIC: "harmony/hub",
+        },
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert mock_config_entry.data[CONF_TRANSPORT] == TRANSPORT_MQTT
+    assert mock_config_entry.data[CONF_MQTT_BASE_TOPIC] == "harmony/hub"
+    assert mock_config_entry.unique_id == HUB_ID
+
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: HOST, CONF_PORT: 8089, CONF_TRANSPORT: TRANSPORT_API}
+    )
+    assert result["reason"] == "reconfigure_successful"
+    assert mock_config_entry.data[CONF_TRANSPORT] == TRANSPORT_API
+    assert mock_config_entry.data[CONF_MQTT_BASE_TOPIC] is None
+
+
+@pytest.mark.usefixtures("mqtt_mock")
+async def test_probe_mqtt(hass: HomeAssistant) -> None:
+    hub = {**load_json("status"), "type": "hub", "capabilities": ["events", "mqtt_v2"]}
+
+    async def probe(payloads: list[str], base: str = "harmony/hub") -> HubStatus:
+        subscribed = asyncio.Event()
+        original = mqtt.async_subscribe
+
+        async def _subscribe(*args: Any, **kwargs: Any) -> Any:
+            unsubscribe = await original(*args, **kwargs)
+            subscribed.set()
+            return unsubscribe
+
+        with patch("custom_components.harmony_ng.config_flow.mqtt.async_subscribe", _subscribe):
+            task = hass.async_create_task(async_probe_mqtt(hass, base))
+            await asyncio.wait_for(subscribed.wait(), 5)
+            for payload in payloads:
+                async_fire_mqtt_message(hass, f"{base.rstrip('/')}/hub", payload)
+            return await task
+
+    status = await probe(["junk", "[1]", json.dumps(hub)], base="home/hub/")
+    assert status.hub_id == HUB_ID
+
+    with pytest.raises(ProbeError) as info:
+        await probe([json.dumps({**hub, "hub_id": None})])
+    assert info.value.code == "mqtt_unsupported"
+
+    with pytest.raises(ProbeError) as info:
+        await probe([json.dumps({**hub, "capabilities": ["events"]})])
+    assert info.value.code == "mqtt_unsupported"
+
+    with (
+        patch("custom_components.harmony_ng.config_flow.MQTT_PROBE_TIMEOUT", 0.05),
+        pytest.raises(ProbeError) as info,
+    ):
+        await probe([])
+    assert info.value.code == "mqtt_unsupported"
+
+    with (
+        patch(
+            "custom_components.harmony_ng.config_flow.mqtt.async_wait_for_mqtt_client",
+            return_value=False,
+        ),
+        pytest.raises(ProbeError) as info,
+    ):
+        await async_probe_mqtt(hass, "harmony/hub")
+    assert info.value.code == "mqtt_not_configured"

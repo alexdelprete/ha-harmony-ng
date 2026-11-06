@@ -9,10 +9,11 @@ from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 
 from custom_components.harmony_ng.const import DOMAIN
 from custom_components.harmony_ng.coordinator import HarmonyNgCoordinator
-from custom_components.harmony_ng.pyharmonyng import Snapshot
+from custom_components.harmony_ng.pyharmonyng import HarmonyNgAuthError, Snapshot
 from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.util import dt as dt_util
 
 from .conftest import HUB_ID, REMOTE_ID, FakeTransport
@@ -178,3 +179,22 @@ async def test_events_before_setup_are_ignored(
     fake_transport.push(load_frames("ws_button")[0])
     fake_transport.drop()
     assert coordinator.data is None
+
+
+async def test_update_without_setup(hass: HomeAssistant, fake_transport: FakeTransport) -> None:
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=HUB_ID, data={})
+    coordinator = HarmonyNgCoordinator(hass, entry, fake_transport)
+    with pytest.raises(UpdateFailed):
+        await coordinator._async_update_data()
+
+
+async def test_refetch_auth_failure_starts_reauth(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    fake_transport.errors["fetch_activities"] = HarmonyNgAuthError("token revoked")
+    fake_transport.push({"type": "config_changed", "files": ["devices"], "seq": 91, "ts": 1})
+    await hass.async_block_till_done()
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=5))
+    await hass.async_block_till_done()
+    flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    assert [flow["context"]["source"] for flow in flows] == ["reauth"]

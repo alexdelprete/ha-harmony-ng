@@ -59,6 +59,7 @@ vars:
   # that repo-sync renders into pyproject.toml.
   dev_extra_requirements:
     - "infrared-protocols==10.5.0"   # the infrared platform's requirement in HA 2026.11, needed by the tests
+    - "aiohasupervisor==0.8.1"       # imported by the mqtt config flow (hassio); the MQTT test fixture needs it
 
 copy_files:
   - .gitattributes
