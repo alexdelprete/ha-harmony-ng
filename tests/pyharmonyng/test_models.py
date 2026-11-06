@@ -246,3 +246,22 @@ def test_update_status_and_ir_signal() -> None:
     assert IrSignal.from_json({"timings": ["x", 1.5], "frequency": "36000"}) == IrSignal(
         (1,), 36000
     )
+
+
+def test_bt_status_documented_shape() -> None:
+    """The API document's shape, devices with bdaddr and no per-host flag, still parses."""
+    status = BtStatus.from_json(
+        {
+            "connected": True,
+            "target": "AA:BB:CC:DD:EE:FF",
+            "devices": [
+                {"bdaddr": "AA:BB:CC:DD:EE:FF", "name": "Apple TV"},
+                {"bdaddr": "11:22:33:44:55:66", "name": "Shield"},
+                "junk",
+            ],
+        }
+    )
+    assert [(h.bdaddr, h.connected) for h in status.hosts] == [
+        ("AA:BB:CC:DD:EE:FF", True),
+        ("11:22:33:44:55:66", False),
+    ]

@@ -3,14 +3,18 @@
   "running": true,
   "connected": true,
   "target": "AA:BB:CC:DD:EE:FF",
-  "devices": [
+  "hosts": [
     {
-      "bdaddr": "AA:BB:CC:DD:EE:FF",
-      "name": "Apple TV"
+      "addr": "AA:BB:CC:DD:EE:FF",
+      "name": "Apple TV",
+      "connected": true,
+      "paired": true
     },
     {
-      "bdaddr": "11:22:33:44:55:66",
-      "name": "Shield"
+      "addr": "11:22:33:44:55:66",
+      "name": "Shield",
+      "connected": false,
+      "paired": true
     }
   ]
 }

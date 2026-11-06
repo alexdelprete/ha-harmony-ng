@@ -8,11 +8,12 @@ import pytest
 from pytest_homeassistant.common import MockConfigEntry, snapshot_platform
 from syrupy.assertion import SnapshotAssertion
 
+from custom_components.harmony_ng.const import DOMAIN
 from homeassistant.const import STATE_UNAVAILABLE, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
-from .conftest import FakeTransport
+from .conftest import HUB_ID, FakeTransport
 from .pyharmonyng.conftest import load_frames
 
 BUSY = "binary_sensor.living_room_hub_busy"
@@ -64,12 +65,32 @@ async def test_bluetooth_hosts(
 
     bt = load_frames("ws_bt_status")[0]
     bt["target"] = "11:22:33:44:55:66"
-    bt["devices"] = [
-        {"bdaddr": "11:22:33:44:55:66", "name": "Shield"},
-        {"bdaddr": "77:88:99:AA:BB:CC", "name": "Projector"},
+    bt["hosts"] = [
+        {"addr": "11:22:33:44:55:66", "name": "Shield", "connected": True},
+        {"addr": "77:88:99:AA:BB:CC", "name": "Projector", "connected": False},
+        {"addr": "", "name": "Not yet paired", "connected": False},
     ]
     fake_transport.push(bt)
     await hass.async_block_till_done()
     assert hass.states.get(APPLE_TV).state == STATE_UNAVAILABLE
     assert hass.states.get(SHIELD).state == "on"
     assert hass.states.get("binary_sensor.living_room_hub_projector_connected").state == "off"
+
+
+@pytest.mark.usefixtures("fake_transport")
+async def test_addressless_host_sensor_removed(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, entity_registry: er.EntityRegistry
+) -> None:
+    """0.1.1 read a key the Hub does not send and left one sensor with an empty address."""
+    mock_config_entry.add_to_hass(hass)
+    stale = entity_registry.async_get_or_create(
+        "binary_sensor",
+        DOMAIN,
+        f"{HUB_ID}_bt_host_",
+        config_entry=mock_config_entry,
+        suggested_object_id="living_room_hub_tv_connected",
+    )
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert entity_registry.async_get(stale.entity_id) is None
+    assert hass.states.get(APPLE_TV).state == "on"

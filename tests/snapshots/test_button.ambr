@@ -99,6 +99,156 @@
     'state': 'unknown',
   })
 # ---
+# name: test_entities[button.living_room_hub_apple_tv_home-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <ChildDeviceEntry identifiers=[('harmony_ng', '20140101120000-000001:device:70321458')]>,
+    'disabled_by': None,
+    'domain': 'button',
+    'entity_category': None,
+    'entity_id': 'button.living_room_hub_apple_tv_home',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Home',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Home',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'device_command',
+    'unique_id': '20140101120000-000001:device:70321458_command_Home',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[button.living_room_hub_apple_tv_home-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Apple TV Home',
+    }),
+    'context': <ANY>,
+    'entity_id': 'button.living_room_hub_apple_tv_home',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_entities[button.living_room_hub_apple_tv_menu-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <ChildDeviceEntry identifiers=[('harmony_ng', '20140101120000-000001:device:70321458')]>,
+    'disabled_by': None,
+    'domain': 'button',
+    'entity_category': None,
+    'entity_id': 'button.living_room_hub_apple_tv_menu',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Menu',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Menu',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'device_command',
+    'unique_id': '20140101120000-000001:device:70321458_command_Menu',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[button.living_room_hub_apple_tv_menu-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Apple TV Menu',
+    }),
+    'context': <ANY>,
+    'entity_id': 'button.living_room_hub_apple_tv_menu',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_entities[button.living_room_hub_apple_tv_select-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <ChildDeviceEntry identifiers=[('harmony_ng', '20140101120000-000001:device:70321458')]>,
+    'disabled_by': None,
+    'domain': 'button',
+    'entity_category': None,
+    'entity_id': 'button.living_room_hub_apple_tv_select',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Select',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Select',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'device_command',
+    'unique_id': '20140101120000-000001:device:70321458_command_Select',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[button.living_room_hub_apple_tv_select-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Apple TV Select',
+    }),
+    'context': <ANY>,
+    'entity_id': 'button.living_room_hub_apple_tv_select',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
 # name: test_entities[button.living_room_hub_cancel_activity-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
@@ -149,6 +299,256 @@
     'state': 'unknown',
   })
 # ---
+# name: test_entities[button.living_room_hub_lg_oled_tv_inputhdmi2-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <ChildDeviceEntry identifiers=[('harmony_ng', '20140101120000-000001:device:70321456')]>,
+    'disabled_by': None,
+    'domain': 'button',
+    'entity_category': None,
+    'entity_id': 'button.living_room_hub_lg_oled_tv_inputhdmi2',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'InputHdmi2',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'InputHdmi2',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'device_command',
+    'unique_id': '20140101120000-000001:device:70321456_command_InputHdmi2',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[button.living_room_hub_lg_oled_tv_inputhdmi2-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'LG OLED TV InputHdmi2',
+    }),
+    'context': <ANY>,
+    'entity_id': 'button.living_room_hub_lg_oled_tv_inputhdmi2',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_entities[button.living_room_hub_lg_oled_tv_mute-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <ChildDeviceEntry identifiers=[('harmony_ng', '20140101120000-000001:device:70321456')]>,
+    'disabled_by': None,
+    'domain': 'button',
+    'entity_category': None,
+    'entity_id': 'button.living_room_hub_lg_oled_tv_mute',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Mute',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Mute',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'device_command',
+    'unique_id': '20140101120000-000001:device:70321456_command_Mute',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[button.living_room_hub_lg_oled_tv_mute-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'LG OLED TV Mute',
+    }),
+    'context': <ANY>,
+    'entity_id': 'button.living_room_hub_lg_oled_tv_mute',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_entities[button.living_room_hub_lg_oled_tv_powertoggle-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <ChildDeviceEntry identifiers=[('harmony_ng', '20140101120000-000001:device:70321456')]>,
+    'disabled_by': None,
+    'domain': 'button',
+    'entity_category': None,
+    'entity_id': 'button.living_room_hub_lg_oled_tv_powertoggle',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'PowerToggle',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'PowerToggle',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'device_command',
+    'unique_id': '20140101120000-000001:device:70321456_command_PowerToggle',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[button.living_room_hub_lg_oled_tv_powertoggle-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'LG OLED TV PowerToggle',
+    }),
+    'context': <ANY>,
+    'entity_id': 'button.living_room_hub_lg_oled_tv_powertoggle',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_entities[button.living_room_hub_lg_oled_tv_volumedown-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <ChildDeviceEntry identifiers=[('harmony_ng', '20140101120000-000001:device:70321456')]>,
+    'disabled_by': None,
+    'domain': 'button',
+    'entity_category': None,
+    'entity_id': 'button.living_room_hub_lg_oled_tv_volumedown',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'VolumeDown',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'VolumeDown',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'device_command',
+    'unique_id': '20140101120000-000001:device:70321456_command_VolumeDown',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[button.living_room_hub_lg_oled_tv_volumedown-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'LG OLED TV VolumeDown',
+    }),
+    'context': <ANY>,
+    'entity_id': 'button.living_room_hub_lg_oled_tv_volumedown',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_entities[button.living_room_hub_lg_oled_tv_volumeup-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <ChildDeviceEntry identifiers=[('harmony_ng', '20140101120000-000001:device:70321456')]>,
+    'disabled_by': None,
+    'domain': 'button',
+    'entity_category': None,
+    'entity_id': 'button.living_room_hub_lg_oled_tv_volumeup',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'VolumeUp',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'VolumeUp',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'device_command',
+    'unique_id': '20140101120000-000001:device:70321456_command_VolumeUp',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[button.living_room_hub_lg_oled_tv_volumeup-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'LG OLED TV VolumeUp',
+    }),
+    'context': <ANY>,
+    'entity_id': 'button.living_room_hub_lg_oled_tv_volumeup',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
 # name: test_entities[button.living_room_hub_power_off-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
@@ -193,6 +593,306 @@
     }),
     'context': <ANY>,
     'entity_id': 'button.living_room_hub_power_off',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_entities[button.living_room_hub_soundbar_poweroff-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <ChildDeviceEntry identifiers=[('harmony_ng', '20140101120000-000001:device:70321457')]>,
+    'disabled_by': None,
+    'domain': 'button',
+    'entity_category': None,
+    'entity_id': 'button.living_room_hub_soundbar_poweroff',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'PowerOff',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'PowerOff',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'device_command',
+    'unique_id': '20140101120000-000001:device:70321457_command_PowerOff',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[button.living_room_hub_soundbar_poweroff-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Soundbar PowerOff',
+    }),
+    'context': <ANY>,
+    'entity_id': 'button.living_room_hub_soundbar_poweroff',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_entities[button.living_room_hub_soundbar_poweron-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <ChildDeviceEntry identifiers=[('harmony_ng', '20140101120000-000001:device:70321457')]>,
+    'disabled_by': None,
+    'domain': 'button',
+    'entity_category': None,
+    'entity_id': 'button.living_room_hub_soundbar_poweron',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'PowerOn',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'PowerOn',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'device_command',
+    'unique_id': '20140101120000-000001:device:70321457_command_PowerOn',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[button.living_room_hub_soundbar_poweron-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Soundbar PowerOn',
+    }),
+    'context': <ANY>,
+    'entity_id': 'button.living_room_hub_soundbar_poweron',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_entities[button.living_room_hub_soundbar_volumedown-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <ChildDeviceEntry identifiers=[('harmony_ng', '20140101120000-000001:device:70321457')]>,
+    'disabled_by': None,
+    'domain': 'button',
+    'entity_category': None,
+    'entity_id': 'button.living_room_hub_soundbar_volumedown',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'VolumeDown',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'VolumeDown',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'device_command',
+    'unique_id': '20140101120000-000001:device:70321457_command_VolumeDown',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[button.living_room_hub_soundbar_volumedown-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Soundbar VolumeDown',
+    }),
+    'context': <ANY>,
+    'entity_id': 'button.living_room_hub_soundbar_volumedown',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_entities[button.living_room_hub_soundbar_volumeup-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <ChildDeviceEntry identifiers=[('harmony_ng', '20140101120000-000001:device:70321457')]>,
+    'disabled_by': None,
+    'domain': 'button',
+    'entity_category': None,
+    'entity_id': 'button.living_room_hub_soundbar_volumeup',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'VolumeUp',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'VolumeUp',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'device_command',
+    'unique_id': '20140101120000-000001:device:70321457_command_VolumeUp',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[button.living_room_hub_soundbar_volumeup-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Soundbar VolumeUp',
+    }),
+    'context': <ANY>,
+    'entity_id': 'button.living_room_hub_soundbar_volumeup',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_entities[button.living_room_hub_start_listen_to_music-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <DeviceEntry identifiers=[('harmony_ng', '20140101120000-000001')]>,
+    'disabled_by': None,
+    'domain': 'button',
+    'entity_category': None,
+    'entity_id': 'button.living_room_hub_start_listen_to_music',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Start Listen to Music',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Start Listen to Music',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'start_activity',
+    'unique_id': '20140101120000-000001_activity_234567',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[button.living_room_hub_start_listen_to_music-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living Room Hub Start Listen to Music',
+    }),
+    'context': <ANY>,
+    'entity_id': 'button.living_room_hub_start_listen_to_music',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_entities[button.living_room_hub_start_watch_tv-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <DeviceEntry identifiers=[('harmony_ng', '20140101120000-000001')]>,
+    'disabled_by': None,
+    'domain': 'button',
+    'entity_category': None,
+    'entity_id': 'button.living_room_hub_start_watch_tv',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Start Watch TV',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'Start Watch TV',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'start_activity',
+    'unique_id': '20140101120000-000001_activity_123456',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[button.living_room_hub_start_watch_tv-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living Room Hub Start Watch TV',
+    }),
+    'context': <ANY>,
+    'entity_id': 'button.living_room_hub_start_watch_tv',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,

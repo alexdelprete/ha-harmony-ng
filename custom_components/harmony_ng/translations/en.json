@@ -147,6 +147,12 @@
       },
       "sleep": {
         "name": "Sleep"
+      },
+      "start_activity": {
+        "name": "Start {activity}"
+      },
+      "device_command": {
+        "name": "Command"
       }
     },
     "event": {

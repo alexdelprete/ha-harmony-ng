@@ -1,1 +1,1 @@
-{"type": "bt_status", "running": true, "connected": true, "target": "AA:BB:CC:DD:EE:FF", "devices": [{"bdaddr": "AA:BB:CC:DD:EE:FF", "name": "Apple TV"}, {"bdaddr": "11:22:33:44:55:66", "name": "Shield"}], "seq": 56, "ts": 1762387256}
+{"type": "bt_status", "running": true, "connected": true, "target": "AA:BB:CC:DD:EE:FF", "seq": 56, "ts": 1762387256, "hosts": [{"addr": "AA:BB:CC:DD:EE:FF", "name": "Apple TV", "connected": true, "paired": true}, {"addr": "11:22:33:44:55:66", "name": "Shield", "connected": false, "paired": true}]}
