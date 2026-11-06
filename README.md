@@ -37,8 +37,8 @@ no longer speak the Logitech protocol.
 - Infrared emitters for the front blaster and the two emitter jacks, usable by Home Assistant's
   infrared integrations (LG, Samsung, Marantz, Dyson and others) as their transmitter.
 - Services for device commands on chosen outputs, Bluetooth keys, Help and cancel.
-- Discovery through mDNS once the Hub's firmware announces itself; manual setup by address
-  otherwise. Optional Personal Access Token when the Hub has authentication enabled.
+- Discovery through mDNS; manual setup by address also works. Optional Personal Access
+  Token when the Hub has authentication enabled.
 
 <!-- BEGIN SHARED:repo-sync:installation -->
 <!-- Synced by repo-sync on 2026-11-06 -->

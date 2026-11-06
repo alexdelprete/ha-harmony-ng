@@ -3,8 +3,8 @@
 #
 # Hassfest does not validate this file for custom integrations: it tracks the
 # rules. The tier declared in manifest.json ("quality_scale") is the highest
-# one with every rule done or exempt. Gold waits for discovery (firmware
-# milestone 2), Platinum is reached in code already.
+# one with every rule done or exempt. Every rule is done or exempt since the
+# Hub's firmware announces itself over mDNS (firmware milestone 2): platinum.
 rules:
   # Bronze
   action-setup: done
@@ -47,8 +47,8 @@ rules:
   # Gold
   devices: done
   diagnostics: done
-  discovery: todo
-  discovery-update-info: todo
+  discovery: done
+  discovery-update-info: done
   docs-data-update: done
   docs-examples: done
   docs-known-limitations: done
