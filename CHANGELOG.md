@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Brand icon: a compact `h·ng` mark replaces the full wordmark in the square icon, which
   shrank to an unreadable size on the discovery card and in integration lists. The wide
   wordmark stays as the logo.
+- Brand images follow the brands image specification: trimmed to the subject, logos at the
+  preferred 256 and 512 pixel heights, interlaced and losslessly optimized.
 
 ## [0.1.0] - 2026-11-06
 
