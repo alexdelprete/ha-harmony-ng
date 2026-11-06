@@ -34,14 +34,27 @@
       },
       "reconfigure": {
         "title": "Reconfigure {name}",
-        "description": "Change how Home Assistant reaches this Hub. The Hub must be the same unit.",
+        "description": "Change how Home Assistant reaches this Hub, including the transport. The Hub must be the same unit; entities keep their ids whatever the transport.",
         "data": {
           "host": "Host",
           "port": "Port",
-          "token": "Personal Access Token"
+          "token": "Personal Access Token",
+          "transport": "Transport",
+          "mqtt_base_topic": "MQTT base topic"
         },
         "data_description": {
           "token": "Leave empty when the Hub does not require authentication."
+        }
+      },
+      "transport": {
+        "title": "Transport",
+        "description": "How Home Assistant talks to the Hub. The API is the default: direct, acknowledged, no third system. MQTT goes through your broker and the Home Assistant MQTT integration; the Hub must have MQTT enabled. Both offer the same entities and can be switched later without losing anything.",
+        "data": {
+          "transport": "Transport",
+          "mqtt_base_topic": "MQTT base topic"
+        },
+        "data_description": {
+          "mqtt_base_topic": "The base topic configured on the Hub, harmony/hub by default."
         }
       }
     },
@@ -50,7 +63,9 @@
       "invalid_auth": "The Hub refused the token.",
       "not_harmony_ng": "This is not a Hub running harmony-ng, or its firmware is too old to report an identity.",
       "unsupported_firmware": "The Hub's firmware is too old for this integration. Update harmony-ng on the Hub.",
-      "hub_mismatch": "The Hub at this address is a different unit than the one configured."
+      "hub_mismatch": "The Hub at this address is a different unit than the one configured.",
+      "mqtt_not_configured": "The Home Assistant MQTT integration is not set up.",
+      "mqtt_unsupported": "No Hub state arrived on that base topic, or the Hub's MQTT layer is too old. Check that MQTT is enabled on the Hub with this base topic and that its firmware has the MQTT rewrite."
     },
     "abort": {
       "already_configured": "This Hub is already configured.",
@@ -94,21 +109,45 @@
         "release": "Release",
         "release_all": "Release all keys"
       }
+    },
+    "transport": {
+      "options": {
+        "api": "API (REST and WebSocket, recommended)",
+        "mqtt": "MQTT (through the Home Assistant MQTT integration)"
+      }
     }
   },
   "entity": {
     "binary_sensor": {
-      "busy": { "name": "Busy" },
-      "charging": { "name": "Charging" },
-      "config_out_of_sync": { "name": "Configuration out of sync" },
-      "bt_host": { "name": "{name} connected" }
+      "busy": {
+        "name": "Busy"
+      },
+      "charging": {
+        "name": "Charging"
+      },
+      "config_out_of_sync": {
+        "name": "Configuration out of sync"
+      },
+      "bt_host": {
+        "name": "{name} connected"
+      }
     },
     "button": {
-      "power_off": { "name": "Power off" },
-      "sync_remotes": { "name": "Sync remotes" },
-      "cancel_activity": { "name": "Cancel activity" },
-      "wake": { "name": "Wake" },
-      "sleep": { "name": "Sleep" }
+      "power_off": {
+        "name": "Power off"
+      },
+      "sync_remotes": {
+        "name": "Sync remotes"
+      },
+      "cancel_activity": {
+        "name": "Cancel activity"
+      },
+      "wake": {
+        "name": "Wake"
+      },
+      "sleep": {
+        "name": "Sleep"
+      }
     },
     "event": {
       "button": {
@@ -124,12 +163,20 @@
       }
     },
     "infrared": {
-      "ir_front": { "name": "Front blaster" },
-      "ir_jack1": { "name": "Emitter jack 1" },
-      "ir_jack2": { "name": "Emitter jack 2" }
+      "ir_front": {
+        "name": "Front blaster"
+      },
+      "ir_jack1": {
+        "name": "Emitter jack 1"
+      },
+      "ir_jack2": {
+        "name": "Emitter jack 2"
+      }
     },
     "select": {
-      "activity": { "name": "Activity" }
+      "activity": {
+        "name": "Activity"
+      }
     },
     "sensor": {
       "activity_state": {
@@ -141,10 +188,18 @@
           "stopping": "Stopping"
         }
       },
-      "firmware": { "name": "Firmware" },
-      "uptime": { "name": "Last boot" },
-      "battery": { "name": "Battery" },
-      "battery_voltage": { "name": "Battery voltage" }
+      "firmware": {
+        "name": "Firmware"
+      },
+      "uptime": {
+        "name": "Last boot"
+      },
+      "battery": {
+        "name": "Battery"
+      },
+      "battery_voltage": {
+        "name": "Battery voltage"
+      }
     }
   },
   "services": {
@@ -152,44 +207,86 @@
       "name": "Send device command",
       "description": "Sends a command of a configured device on the chosen infrared outputs.",
       "fields": {
-        "device_id": { "name": "Hub", "description": "The Hub that controls the device." },
-        "device": { "name": "Device", "description": "Name or id of the device in the Hub's inventory." },
-        "command": { "name": "Command", "description": "Name of the command as the Hub knows it." },
-        "port": { "name": "Outputs", "description": "Which infrared outputs to use." },
-        "repeats": { "name": "Repeats", "description": "How many times to send the command." }
+        "device_id": {
+          "name": "Hub",
+          "description": "The Hub that controls the device."
+        },
+        "device": {
+          "name": "Device",
+          "description": "Name or id of the device in the Hub's inventory."
+        },
+        "command": {
+          "name": "Command",
+          "description": "Name of the command as the Hub knows it."
+        },
+        "port": {
+          "name": "Outputs",
+          "description": "Which infrared outputs to use."
+        },
+        "repeats": {
+          "name": "Repeats",
+          "description": "How many times to send the command."
+        }
       }
     },
     "bt_key": {
       "name": "Send Bluetooth key",
       "description": "Sends a keyboard key to a Bluetooth host paired with the Hub.",
       "fields": {
-        "device_id": { "name": "Hub", "description": "The Hub paired with the host." },
-        "key": { "name": "Key", "description": "Key name, for example KEY_ENTER." },
-        "action": { "name": "Action", "description": "Tap, press and hold, release, or release every key." },
-        "target": { "name": "Host", "description": "Bluetooth address of the host; the connected host when empty." }
+        "device_id": {
+          "name": "Hub",
+          "description": "The Hub paired with the host."
+        },
+        "key": {
+          "name": "Key",
+          "description": "Key name, for example KEY_ENTER."
+        },
+        "action": {
+          "name": "Action",
+          "description": "Tap, press and hold, release, or release every key."
+        },
+        "target": {
+          "name": "Host",
+          "description": "Bluetooth address of the host; the connected host when empty."
+        }
       }
     },
     "activity_help": {
       "name": "Help",
       "description": "Re-sends the running activity's start commands and returns the devices whose power is a toggle, so you can answer whether each is on.",
       "fields": {
-        "device_id": { "name": "Hub", "description": "The Hub running the activity." }
+        "device_id": {
+          "name": "Hub",
+          "description": "The Hub running the activity."
+        }
       }
     },
     "activity_help_answer": {
       "name": "Answer Help",
       "description": "Answers the Help question for one device: off sends its power toggle.",
       "fields": {
-        "device_id": { "name": "Hub", "description": "The Hub running the activity." },
-        "device": { "name": "Device", "description": "Name or id of the device asked about." },
-        "on": { "name": "Is on", "description": "Whether the device is on; off sends the power toggle." }
+        "device_id": {
+          "name": "Hub",
+          "description": "The Hub running the activity."
+        },
+        "device": {
+          "name": "Device",
+          "description": "Name or id of the device asked about."
+        },
+        "on": {
+          "name": "Is on",
+          "description": "Whether the device is on; off sends the power toggle."
+        }
       }
     },
     "activity_cancel": {
       "name": "Cancel activity",
       "description": "Clears a stuck activity change and returns the Hub to idle.",
       "fields": {
-        "device_id": { "name": "Hub", "description": "The Hub to reset." }
+        "device_id": {
+          "name": "Hub",
+          "description": "The Hub to reset."
+        }
       }
     },
     "sync": {
@@ -198,19 +295,45 @@
     }
   },
   "exceptions": {
-    "hub_busy": { "message": "The Hub is busy with another activity change." },
-    "auth_failed": { "message": "The Hub refused the stored token." },
-    "cannot_connect": { "message": "Cannot reach the Hub: {error}" },
-    "hub_error": { "message": "The Hub refused the request: {error}" },
-    "device_not_found": { "message": "No device named {device} in the Hub's inventory." },
-    "command_not_found": { "message": "{device} has no command named {command}." },
-    "activity_not_found": { "message": "No activity named {activity}." },
-    "no_activity": { "message": "No activity given and no previous activity to start." },
-    "device_required": { "message": "A device is required to send a command." },
-    "target_not_found": { "message": "Device {device_id} does not belong to a Harmony NG Hub." },
-    "entry_not_loaded": { "message": "The Hub {name} is not loaded." },
-    "firmware_too_old": { "message": "The Hub's firmware is too old: {error}" },
-    "hub_mismatch": { "message": "The Hub at this address is {found}, not {expected}." }
+    "hub_busy": {
+      "message": "The Hub is busy with another activity change."
+    },
+    "auth_failed": {
+      "message": "The Hub refused the stored token."
+    },
+    "cannot_connect": {
+      "message": "Cannot reach the Hub: {error}"
+    },
+    "hub_error": {
+      "message": "The Hub refused the request: {error}"
+    },
+    "device_not_found": {
+      "message": "No device named {device} in the Hub's inventory."
+    },
+    "command_not_found": {
+      "message": "{device} has no command named {command}."
+    },
+    "activity_not_found": {
+      "message": "No activity named {activity}."
+    },
+    "no_activity": {
+      "message": "No activity given and no previous activity to start."
+    },
+    "device_required": {
+      "message": "A device is required to send a command."
+    },
+    "target_not_found": {
+      "message": "Device {device_id} does not belong to a Harmony NG Hub."
+    },
+    "entry_not_loaded": {
+      "message": "The Hub {name} is not loaded."
+    },
+    "firmware_too_old": {
+      "message": "The Hub's firmware is too old: {error}"
+    },
+    "hub_mismatch": {
+      "message": "The Hub at this address is {found}, not {expected}."
+    }
   },
   "issues": {
     "firmware_too_old": {
@@ -220,6 +343,17 @@
     "legacy_enabled": {
       "title": "{name} has the Logitech protocol enabled",
       "description": "The Hub serves the stock Logitech protocol on port 8088, so the core Harmony integration can see the same Hub. Its entities would duplicate this integration's. Disable the setting on the Hub, or remove the core integration's entry for this Hub."
+    },
+    "mqtt_discovery_orphans": {
+      "title": "{name}: old MQTT entities left behind",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Remove the old MQTT entities",
+            "description": "Older harmony-ng firmware created MQTT discovery entities for the Hub. The Hub no longer publishes them and this integration replaces them. The devices {devices} and their entities will be removed from the MQTT integration; automations that used them must be changed to this integration's entities."
+          }
+        }
+      }
     }
   }
 }

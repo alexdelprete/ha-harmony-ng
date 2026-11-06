@@ -249,7 +249,14 @@ the listener and returns its snapshot.
   `inventory/#`, `remote/+/button`, `cmd/response`.
 - `connect` waits up to 10 s for the retained `hub`, `activity_state`, `bt` and `rf` payloads and builds
   the snapshot from them; `hub` must carry `mqtt_v2` in its capabilities, otherwise
-  `HarmonyNgUnsupportedError`.
+  `HarmonyNgUnsupportedError`; a Hub whose `status` is `offline` raises `HarmonyNgConnectionError`
+  so setup retries.
+- The `status` topic is the liveness signal: `offline` fires `on_connection(False)`, a later
+  `online` rebuilds a snapshot from the retained topics and fires `on_snapshot` then
+  `on_connection(True)`. A changed `inventory_version` on the `config` topic is delivered as a
+  `ConfigChangedEvent` for devices and activities, so the coordinator refetches.
+- `activity_help` and `activity_help_answer` are `cmd` actions too, and `ir_send` is
+  `send_command` with a `port` field; the firmware spec lists them.
 - Inventory: the retained index plus one chunk per listed device; `fetch_inventory` resolves when
   every chunk with the index's `inventory_version` has arrived (10 s timeout).
 - Commands publish to `<base>/cmd` with a uuid4 `id` and await the matching `cmd/response` for
@@ -427,7 +434,7 @@ messages (`exception-translations`).
 | `firmware_too_old` | error | no | status without `hub_id` or version below the minimum; placeholders version and minimum; cleared on a successful setup |
 | `mqtt_unsupported` | error | no | MQTT entry whose retained `hub` lacks `mqtt_v2` |
 | `legacy_enabled` | warning | no | the Hub reports `legacy_enabled`; explains the duplicate entity risk with the core integration |
-| `mqtt_discovery_orphans` | warning | yes | entities of the `mqtt` domain whose device identifiers match the Hub's old discovery identifiers still exist; the fix flow lists them with their replacements and removes them from the entity registry on confirm |
+| `mqtt_discovery_orphans` | warning | yes | an `mqtt` device still holds the Hub's old discovery entities (recognised by the `_ir_devices` and `_ir_commands` unique id suffixes the old firmware used together); the fix flow names the devices and removes them with their entities on confirm |
 
 <!-- pyml enable md013 -->
 
@@ -485,9 +492,9 @@ non-obvious ones:
   flow tests for every step and error in 2.5, including discovery address update and transport
   switch. Coordinator tests for reconnect, gap refetch and unavailability. Repair tests for each
   issue and the fix flow. Diagnostics snapshot. Services tests for validation and Hub errors.
-- **Parity (I2)**: the same fixture sequence is fed to `ApiTransport` (mocked WebSocket) and to
-  `MqttTransport` (mocked `mqtt` with retained payloads), and the resulting `HubState` objects and
-  platform snapshots must be identical.
+- **Parity (I2)**: the same fixture sequence is fed through the fake transport and through
+  `MqttTransport` on the mocked `mqtt` integration, in one test on the same Home Assistant; every
+  entity's registry identity, state and attributes must be identical between the two.
 - Coverage 97 percent or higher, enforced by the CI rule in CLAUDE.md.
 
 ## 5. Definition of done per milestone

@@ -12,11 +12,22 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.typing import ConfigType
 
-from .const import CONF_TOKEN, CONF_TRANSPORT, DEFAULT_PORT, DOMAIN, PLATFORMS, TRANSPORT_API
+from .const import (
+    CONF_MQTT_BASE_TOPIC,
+    CONF_TOKEN,
+    CONF_TRANSPORT,
+    DEFAULT_PORT,
+    DOMAIN,
+    PLATFORMS,
+    TRANSPORT_API,
+    TRANSPORT_MQTT,
+)
 from .coordinator import HarmonyNgCoordinator
+from .repairs import async_refresh_discovery_issue
 from .services import async_setup_services
 from .transport import HarmonyNgTransport
 from .transport.api import ApiTransport
+from .transport.mqtt import MqttTransport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,8 +51,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 def build_transport(hass: HomeAssistant, entry: ConfigEntry) -> HarmonyNgTransport:
     """Return the transport the entry is configured for."""
     transport = entry.data.get(CONF_TRANSPORT, TRANSPORT_API)
-    if transport != TRANSPORT_API:
-        raise NotImplementedError(f"transport {transport} arrives in a later milestone")
+    if transport == TRANSPORT_MQTT:
+        return MqttTransport(hass, entry.data[CONF_MQTT_BASE_TOPIC])
     return ApiTransport(
         entry.data[CONF_HOST],
         async_get_clientsession(hass),
@@ -67,6 +78,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: HarmonyNgConfigEntry) ->
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    async_refresh_discovery_issue(hass, entry.entry_id, entry.title)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: HarmonyNgConfigEntry) -> None:

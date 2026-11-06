@@ -48,6 +48,7 @@ TXT_TOPIC: Final = "topic"
 ISSUE_FIRMWARE_TOO_OLD: Final = "firmware_too_old"
 ISSUE_LEGACY_ENABLED: Final = "legacy_enabled"
 ISSUE_MQTT_UNSUPPORTED: Final = "mqtt_unsupported"
+ISSUE_MQTT_DISCOVERY_ORPHANS: Final = "mqtt_discovery_orphans"
 
 # Services
 SERVICE_IR_SEND: Final = "ir_send"

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import pytest
 from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.harmony_ng import async_remove_config_entry_device, build_transport
 from custom_components.harmony_ng.const import (
+    CONF_MQTT_BASE_TOPIC,
     CONF_TRANSPORT,
     DOMAIN,
     ISSUE_FIRMWARE_TOO_OLD,
@@ -20,6 +20,7 @@ from custom_components.harmony_ng.pyharmonyng import (
     Snapshot,
 )
 from custom_components.harmony_ng.transport.api import ApiTransport
+from custom_components.harmony_ng.transport.mqtt import MqttTransport
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, issue_registry as ir
@@ -141,7 +142,13 @@ async def test_build_transport(hass: HomeAssistant, mock_config_entry: MockConfi
     assert transport.client.base_url == "http://192.0.2.10:8089"
 
     hass.config_entries.async_update_entry(
-        mock_config_entry, data={**mock_config_entry.data, CONF_TRANSPORT: TRANSPORT_MQTT}
+        mock_config_entry,
+        data={
+            **mock_config_entry.data,
+            CONF_TRANSPORT: TRANSPORT_MQTT,
+            CONF_MQTT_BASE_TOPIC: "harmony/hub",
+        },
     )
-    with pytest.raises(NotImplementedError):
-        build_transport(hass, mock_config_entry)
+    transport = build_transport(hass, mock_config_entry)
+    assert isinstance(transport, MqttTransport)
+    assert transport.base_topic == "harmony/hub"
