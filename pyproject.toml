@@ -33,6 +33,7 @@ dev = [
     "pytest-cov",
     "pytest-homeassistant==2026.11.0",
     "pytest-timeout",
+    "infrared-protocols==10.5.0",
 ]
 
 [dependency-groups]
@@ -55,6 +56,7 @@ dev = [
     "homeassistant>=2026.11.0",
     { include-group = "lint" },
     { include-group = "pytest" },
+    "infrared-protocols==10.5.0",
 ]
 
 # Explicit package discovery: scripts/develop creates a config/ directory at the

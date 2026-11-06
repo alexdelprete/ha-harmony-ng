@@ -1,0 +1,100 @@
+ir_send:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: harmony_ng
+    device:
+      required: true
+      example: "LG OLED TV"
+      selector:
+        text:
+    command:
+      required: true
+      example: "VolumeUp"
+      selector:
+        text:
+    port:
+      default: all
+      selector:
+        select:
+          translation_key: port
+          options:
+            - front
+            - jack1
+            - jack2
+            - all
+    repeats:
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 10
+          mode: box
+
+bt_key:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: harmony_ng
+    key:
+      required: true
+      example: "KEY_ENTER"
+      selector:
+        text:
+    action:
+      default: tap
+      selector:
+        select:
+          translation_key: key_action
+          options:
+            - tap
+            - press
+            - release
+            - release_all
+    target:
+      example: "AA:BB:CC:DD:EE:FF"
+      selector:
+        text:
+
+activity_help:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: harmony_ng
+
+activity_help_answer:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: harmony_ng
+    device:
+      required: true
+      example: "LG OLED TV"
+      selector:
+        text:
+    "on":
+      required: true
+      selector:
+        boolean:
+
+activity_cancel:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: harmony_ng
+
+sync:
+  target:
+    entity:
+      integration: harmony_ng
+      domain: remote

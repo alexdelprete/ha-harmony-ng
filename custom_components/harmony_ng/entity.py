@@ -2,18 +2,26 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
+import logging
+
 from homeassistant.core import callback
-from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityDescription
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, MANUFACTURER, MODEL, VERSION
-from .coordinator import HarmonyNgCoordinator
+from .coordinator import HarmonyNgCoordinator, HubState
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class HarmonyNgEntity(CoordinatorEntity[HarmonyNgCoordinator]):
-    """Base class for Harmony NG entities."""
+    """Base class for every Harmony NG entity.
+
+    An entity belongs to the Hub, or to the remote in an RF slot. Unique ids are the
+    owner's identifier plus the entity key and never carry the transport, host or
+    port, so the transport can change without touching the registry.
+    """
 
     _attr_has_entity_name = True
 
@@ -22,49 +30,74 @@ class HarmonyNgEntity(CoordinatorEntity[HarmonyNgCoordinator]):
         coordinator: HarmonyNgCoordinator,
         description: EntityDescription,
         *,
-        sub_device_id: str | None = None,
+        slot: int | None = None,
     ) -> None:
-        """Initialize the entity and the device it belongs to.
-
-        Without sub_device_id the entity belongs to the hub device registered in
-        async_setup_entry. With one, it belongs to a device reached through the
-        hub, linked with via_device_id.
-        """
+        """Key the entity by its owner and description."""
         super().__init__(coordinator)
         self.entity_description = description
-        entry = coordinator.config_entry
-        hub_identifier = (DOMAIN, coordinator.device_unique_id)
+        self._slot = slot
+        if slot is None:
+            owner = coordinator.hub_id
+            self._attr_device_info = coordinator.hub_device_info()
+        else:
+            owner = coordinator.remote_identifier(slot)
+            self._attr_device_info = coordinator.remote_device_info(slot)
+        self._attr_unique_id = f"{owner}_{description.key}"
+        self._attr_translation_key = description.translation_key or description.key
 
-        if sub_device_id is None:
-            self._attr_unique_id = f"{coordinator.device_unique_id}_{description.key}"
-            self._attr_device_info = DeviceInfo(identifiers={hub_identifier})
-            return
+    @property
+    def state_data(self) -> HubState:
+        """Return the coordinator's state."""
+        return self.coordinator.data
 
-        # DeviceInfo is a keyword-only dataclass (Home Assistant 2026.11). The parent
-        # is linked by registry id: look the hub up by identifier *and* entry id,
-        # since identifiers are unique per config entry (async_get_device and
-        # via_device, the identifier-tuple form, are deprecated and go in 2027.8).
-        hub = dr.async_get(coordinator.hass).async_get_device_by_identifier(
-            hub_identifier, entry.entry_id
-        )
-        self._attr_unique_id = f"{sub_device_id}_{description.key}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, sub_device_id)},
-            manufacturer=MANUFACTURER,
-            model=MODEL,
-            name=f"{entry.title} {sub_device_id}",
-            sw_version=VERSION,
-            via_device_id=hub.id if hub is not None else None,
-        )
+    @property
+    def slot(self) -> int | None:
+        """Return the RF slot this entity belongs to, if any."""
+        return self._slot
+
+    @property
+    def available(self) -> bool:
+        """Unavailable while the Hub is unreachable, or while the slot has no remote."""
+        if not super().available or not self.coordinator.data.connected:
+            return False
+        if self._slot is None:
+            return True
+        rf_slot = self.coordinator.data.slot(self._slot)
+        return rf_slot is not None and rf_slot.active
 
     @callback
     def async_entity_id_changed(self, old_entity_id: str) -> None:
-        """Re-key anything derived from the entity id after an in-place rename.
-
-        Since Home Assistant 2026.11 an entity whose entity_id changes is updated in
-        place instead of removed and re-added; implementing this hook (even as a
-        plain super() call) opts the entity in before the compatibility path ends
-        in 2027.11. Update listeners or signals keyed on self.entity_id here, call
-        super() first and never await.
-        """
+        """Nothing here is keyed on the entity id; keep the in-place rename hook."""
         super().async_entity_id_changed(old_entity_id)
+
+
+type EntityFactory[T] = Callable[[HarmonyNgCoordinator, T], Iterable[HarmonyNgEntity]]
+
+
+@callback
+def async_add_dynamic_entities[T](
+    coordinator: HarmonyNgCoordinator,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+    keys: Callable[[HubState], Iterable[T]],
+    factory: EntityFactory[T],
+) -> Callable[[], None]:
+    """Add entities for every key the state reports, now and as new ones appear.
+
+    Remotes pair into a slot and Bluetooth hosts pair with the Hub at any time;
+    this keeps the entity set in step without a reload. Returns the unsubscribe
+    callback for the coordinator listener.
+    """
+    known: set[T] = set()
+
+    @callback
+    def _check() -> None:
+        new_keys = [key for key in keys(coordinator.data) if key not in known]
+        if not new_keys:
+            return
+        known.update(new_keys)
+        entities = [entity for key in new_keys for entity in factory(coordinator, key)]
+        if entities:
+            async_add_entities(entities)
+
+    _check()
+    return coordinator.async_add_listener(_check)

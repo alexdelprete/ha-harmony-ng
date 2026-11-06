@@ -1,0 +1,154 @@
+# serializer version: 1
+# name: test_entities[infrared.living_room_hub_emitter_jack_1-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <DeviceEntry identifiers=[('harmony_ng', '20140101120000-000001')]>,
+    'disabled_by': None,
+    'domain': 'infrared',
+    'entity_category': None,
+    'entity_id': 'infrared.living_room_hub_emitter_jack_1',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Emitter jack 1',
+    'options': dict({
+    }),
+    'original_device_class': <InfraredDeviceClass.EMITTER: 'emitter'>,
+    'original_icon': None,
+    'original_name': 'Emitter jack 1',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'ir_jack1',
+    'unique_id': '20140101120000-000001_ir_jack1',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[infrared.living_room_hub_emitter_jack_1-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'emitter',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living Room Hub Emitter jack 1',
+    }),
+    'context': <ANY>,
+    'entity_id': 'infrared.living_room_hub_emitter_jack_1',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_entities[infrared.living_room_hub_emitter_jack_2-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <DeviceEntry identifiers=[('harmony_ng', '20140101120000-000001')]>,
+    'disabled_by': None,
+    'domain': 'infrared',
+    'entity_category': None,
+    'entity_id': 'infrared.living_room_hub_emitter_jack_2',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Emitter jack 2',
+    'options': dict({
+    }),
+    'original_device_class': <InfraredDeviceClass.EMITTER: 'emitter'>,
+    'original_icon': None,
+    'original_name': 'Emitter jack 2',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'ir_jack2',
+    'unique_id': '20140101120000-000001_ir_jack2',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[infrared.living_room_hub_emitter_jack_2-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'emitter',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living Room Hub Emitter jack 2',
+    }),
+    'context': <ANY>,
+    'entity_id': 'infrared.living_room_hub_emitter_jack_2',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
+# name: test_entities[infrared.living_room_hub_front_blaster-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <DeviceEntry identifiers=[('harmony_ng', '20140101120000-000001')]>,
+    'disabled_by': None,
+    'domain': 'infrared',
+    'entity_category': None,
+    'entity_id': 'infrared.living_room_hub_front_blaster',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Front blaster',
+    'options': dict({
+    }),
+    'original_device_class': <InfraredDeviceClass.EMITTER: 'emitter'>,
+    'original_icon': None,
+    'original_name': 'Front blaster',
+    'platform': 'harmony_ng',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'ir_front',
+    'unique_id': '20140101120000-000001_ir_front',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[infrared.living_room_hub_front_blaster-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'emitter',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living Room Hub Front blaster',
+    }),
+    'context': <ANY>,
+    'entity_id': 'infrared.living_room_hub_front_blaster',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'unknown',
+  })
+# ---
