@@ -7,7 +7,7 @@ from typing import Final
 from homeassistant.const import Platform
 
 DOMAIN: Final = "harmony_ng"
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 MANUFACTURER: Final = "Logitech"
 MODEL_HUB: Final = "Harmony Hub"
