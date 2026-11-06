@@ -7,11 +7,16 @@ transports produce identical results and the firmware side knows which flag unlo
 
 ## 0. Scope and delivery
 
-Two repositories:
+Two components, one repository for now:
 
-- **pyharmonyng**, a typed asyncio client for the Hub's REST and WebSocket API, published to PyPI
-  (the name is free as of 2026-11-06). No Home Assistant imports. Its own tests, replaying the
-  fixtures the firmware repository records.
+- **pyharmonyng**, a typed asyncio client for the Hub's REST and WebSocket API. No Home Assistant
+  imports, its own tests replaying the fixtures the firmware repository records. During the
+  implementation it lives vendored inside the integration at
+  `custom_components/harmony_ng/pyharmonyng/`, so Home Assistant can import it without a PyPI
+  release; its tests live in `tests/pyharmonyng/`. At the end of the implementation it moves to
+  its own repository and to PyPI (the name was free on 2026-11-06), the vendored copy is deleted
+  and `manifest.json` pins the released version. The package keeps the discipline of a separate
+  library from day one: no imports from the integration, relative imports only inside the package.
 - **ha-harmony-ng**, this repository: the custom integration, including the MQTT transport, which
   is Home Assistant specific and therefore not in the library.
 
@@ -21,7 +26,7 @@ Milestones, each one pull request per repository, aligned with the firmware ones
 
 | Milestone | Needs firmware | Content |
 | --- | --- | --- |
-| L1 library 0.1 | milestone 1 fixtures | REST models, WebSocket listener, exceptions, capability helpers, fixture replay tests |
+| L1 library 0.1 | milestone 1 fixtures | REST models, WebSocket listener, exceptions, capability helpers, fixture replay tests; vendored in the integration |
 | I1 integration 0.1 | milestone 1 on the Hub (milestone 2 for discovery) | API transport, config flow with zeroconf, all first-release entities, services, repairs, diagnostics, quality scale rules except the MQTT-specific ones |
 | I2 integration 0.2 | milestone 3 | MQTT transport, transport step in the config flow, transport switch in reconfigure, parity tests, orphaned discovery entity repair |
 | Later | milestone 4 and beyond | Update entity once update-apply is validated, infrared receiver if capture coexists with sending, child devices for configured IR and BT devices |
@@ -37,7 +42,7 @@ Home Assistant minimum 2026.8.0; Python 3.14; no personal data in fixtures or do
 ### 1.1 Layout
 
 ```text
-pyharmonyng/
+custom_components/harmony_ng/pyharmonyng/   (moves to its own repository at the end)
   __init__.py        public exports and __version__
   client.py          HarmonyNgClient (REST)
   listener.py        HarmonyNgListener (WebSocket)
@@ -46,13 +51,14 @@ pyharmonyng/
   exceptions.py
   capabilities.py    flag names and MIN_API_VERSION
   py.typed
-tests/
+tests/pyharmonyng/
   fixtures/          copied from the firmware repository tests/fixtures/ha
   test_client.py, test_listener.py, test_models.py, test_events.py
 ```
 
-Requires Python 3.13 or newer, `aiohttp` only. Strict typing (mypy strict and ruff in CI),
-`py.typed` shipped. Semantic versions; the integration pins an exact version in `manifest.json`.
+Requires Python 3.13 or newer, `aiohttp` only. Strict typing (ty in this repository, mypy strict
+once it has its own), `py.typed` shipped. Semantic versions; once released, the integration pins
+an exact version in `manifest.json`. While vendored, `ApiTransport` imports it relatively.
 
 ### 1.2 Client
 
@@ -463,7 +469,9 @@ The tier is self-declared; `quality_scale.yaml` tracks every rule. The non-obvio
 
 ## 5. Definition of done per milestone
 
-- **L1**: package builds, strict typing passes, fixtures replay, published to PyPI as 0.1.0.
+- **L1**: package importable from the integration, strict typing passes, fixtures replay, no
+  import of anything outside the package. PyPI publication is deferred to the end of the
+  implementation.
 - **I1**: every row of 2.7 except the MQTT-only behaviour; flows of 2.5 without the transport
   choice; services, repairs, diagnostics; README sections; `quality_scale.yaml` with every rule
   `done` except `discovery`, `discovery-update-info` (until firmware milestone 2) and the
