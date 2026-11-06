@@ -1,6 +1,7 @@
 {
   "domain": "harmony_ng",
   "name": "Harmony NG",
+  "categories": ["buttons_remotes"],
   "codeowners": ["@alexdelprete"],
   "config_flow": true,
   "documentation": "https://github.com/alexdelprete/ha-harmony-ng",
