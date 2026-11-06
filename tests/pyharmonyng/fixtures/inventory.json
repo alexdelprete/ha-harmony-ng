@@ -1,0 +1,106 @@
+{
+  "devices": [
+    {
+      "id": "70321456",
+      "name": "LG OLED TV",
+      "type": "Television",
+      "manufacturer": "LG",
+      "model": "OLED65C2",
+      "controlPort": 0,
+      "commands": [
+        {
+          "name": "PowerToggle",
+          "raw": "0000 006d 0022 0002 0155 00aa",
+          "port": 7,
+          "repeats": 1
+        },
+        {
+          "name": "VolumeUp",
+          "raw": "0000 006d 0022 0002 0155 00aa",
+          "port": 7,
+          "repeats": 1
+        },
+        {
+          "name": "VolumeDown",
+          "raw": "0000 006d 0022 0002 0155 00aa",
+          "port": 7,
+          "repeats": 1
+        },
+        {
+          "name": "Mute",
+          "raw": "0000 006d 0022 0002 0155 00aa",
+          "port": 7,
+          "repeats": 1
+        },
+        {
+          "name": "InputHdmi2",
+          "raw": "0000 006d 0022 0002 0155 00aa",
+          "port": 7,
+          "repeats": 1
+        }
+      ]
+    },
+    {
+      "id": "70321457",
+      "name": "Soundbar",
+      "type": "Audio",
+      "manufacturer": "Sonos",
+      "model": "Arc",
+      "controlPort": 0,
+      "commands": [
+        {
+          "name": "PowerOn",
+          "raw": "0000 006d 0022 0002 0155 00aa",
+          "port": 7,
+          "repeats": 1
+        },
+        {
+          "name": "PowerOff",
+          "raw": "0000 006d 0022 0002 0155 00aa",
+          "port": 7,
+          "repeats": 1
+        },
+        {
+          "name": "VolumeUp",
+          "raw": "0000 006d 0022 0002 0155 00aa",
+          "port": 7,
+          "repeats": 1
+        },
+        {
+          "name": "VolumeDown",
+          "raw": "0000 006d 0022 0002 0155 00aa",
+          "port": 7,
+          "repeats": 1
+        }
+      ]
+    },
+    {
+      "id": "70321458",
+      "name": "Apple TV",
+      "type": "Streaming Media Player",
+      "manufacturer": "Apple",
+      "model": "4K",
+      "controlPort": 0,
+      "commands": [
+        {
+          "name": "Home",
+          "raw": "0000 006d 0022 0002 0155 00aa",
+          "port": 7,
+          "repeats": 1
+        },
+        {
+          "name": "Select",
+          "raw": "0000 006d 0022 0002 0155 00aa",
+          "port": 7,
+          "repeats": 1
+        },
+        {
+          "name": "Menu",
+          "raw": "0000 006d 0022 0002 0155 00aa",
+          "port": 7,
+          "repeats": 1
+        }
+      ]
+    }
+  ]
+}

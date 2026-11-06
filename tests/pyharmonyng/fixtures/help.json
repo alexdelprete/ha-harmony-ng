@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "activity": "123456",
+  "toggleDevices": [
+    {
+      "id": "70321456",
+      "name": "LG OLED TV",
+      "command": "PowerToggle"
+    }
+  ]
+}

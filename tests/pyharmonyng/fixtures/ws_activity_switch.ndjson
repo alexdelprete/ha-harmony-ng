@@ -1,0 +1,9 @@
+{"type": "activity_state", "activity": "123456", "state": 1, "stateName": "starting", "busy": true, "sending": true, "seq": 43, "ts": 1762387243}
+{"type": "activity_progress", "activity": "123456", "activityId": "123456", "state": "starting", "stateCode": 1, "step": 1, "currentStep": 1, "total": 3, "totalSteps": 3, "desc": "LG OLED TV PowerToggle", "stepDesc": "LG OLED TV PowerToggle", "seq": 44, "ts": 1762387244}
+{"type": "activity_progress", "activity": "123456", "activityId": "123456", "state": "starting", "stateCode": 1, "step": 2, "currentStep": 2, "total": 3, "totalSteps": 3, "desc": "Soundbar PowerOn", "stepDesc": "Soundbar PowerOn", "seq": 45, "ts": 1762387245}
+{"type": "activity_progress", "activity": "123456", "activityId": "123456", "state": "starting", "stateCode": 1, "step": 3, "currentStep": 3, "total": 3, "totalSteps": 3, "desc": "LG OLED TV InputHdmi2", "stepDesc": "LG OLED TV InputHdmi2", "seq": 46, "ts": 1762387246}
+{"type": "activity_state", "activity": "123456", "state": 2, "stateName": "running", "busy": false, "sending": false, "seq": 47, "ts": 1762387247}
+{"type": "activity_state", "activity": "123456", "state": 3, "stateName": "stopping", "busy": true, "sending": true, "seq": 48, "ts": 1762387248}
+{"type": "activity_progress", "activity": "123456", "activityId": "123456", "state": "stopping", "stateCode": 3, "step": 1, "currentStep": 1, "total": 2, "totalSteps": 2, "desc": "LG OLED TV PowerToggle", "stepDesc": "LG OLED TV PowerToggle", "seq": 49, "ts": 1762387249}
+{"type": "activity_progress", "activity": "123456", "activityId": "123456", "state": "stopping", "stateCode": 3, "step": 2, "currentStep": 2, "total": 2, "totalSteps": 2, "desc": "Soundbar PowerOff", "stepDesc": "Soundbar PowerOff", "seq": 50, "ts": 1762387250}
+{"type": "activity_state", "activity": "-1", "state": 0, "stateName": "idle", "busy": false, "sending": false, "seq": 51, "ts": 1762387251}
