@@ -346,12 +346,11 @@
     },
     "mqtt_discovery_orphans": {
       "title": "{name}: old MQTT entities left behind",
-      "description": "Older harmony-ng firmware created MQTT discovery entities for the Hub ({devices}). The Hub no longer publishes them and this integration replaces them. Remove them to avoid duplicates, and repoint automations to the new entities.",
       "fix_flow": {
         "step": {
           "confirm": {
             "title": "Remove the old MQTT entities",
-            "description": "The devices {devices} and their entities will be removed from the MQTT integration. Automations that used them must be changed to this integration's entities."
+            "description": "Older harmony-ng firmware created MQTT discovery entities for the Hub. The Hub no longer publishes them and this integration replaces them. The devices {devices} and their entities will be removed from the MQTT integration; automations that used them must be changed to this integration's entities."
           }
         }
       }
