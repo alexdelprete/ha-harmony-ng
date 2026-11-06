@@ -10,6 +10,7 @@ from custom_components.harmony_ng.pyharmonyng import (
     BtStatusEvent,
     ButtonEvent,
     ConfigChangedEvent,
+    IrReceivedEvent,
     RfStatusEvent,
     parse,
 )
@@ -94,4 +95,13 @@ def test_event_types_listed() -> None:
         "bt_status",
         "rf_status",
         "button",
+        "ir_received",
     } == EVENT_TYPES
+
+
+def test_ir_received_event() -> None:
+    (event,) = (parse(frame) for frame in load_frames("ws_ir_received"))
+    assert isinstance(event, IrReceivedEvent)
+    assert event.signal.modulation == 38000
+    assert len(event.signal.timings) == 8
+    assert "ir_received" in EVENT_TYPES

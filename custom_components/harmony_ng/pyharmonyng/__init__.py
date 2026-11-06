@@ -9,6 +9,7 @@ from __future__ import annotations
 from .capabilities import (
     ALL_CAPABILITIES,
     CAP_EVENTS,
+    CAP_IR_CAPTURE,
     CAP_IR_RAW,
     CAP_LEGACY,
     CAP_MDNS,
@@ -28,6 +29,7 @@ from .events import (
     ButtonEvent,
     ConfigChangedEvent,
     HubEvent,
+    IrReceivedEvent,
     RfStatusEvent,
     parse,
 )
@@ -59,12 +61,14 @@ from .models import (
     HelpResult,
     HubStatus,
     Inventory,
+    IrSignal,
     KeyAction,
     MqttInfo,
     RemoteButton,
     RfSlot,
     RfStatus,
     Snapshot,
+    UpdateStatus,
 )
 
 __version__ = "0.1.0"
@@ -72,6 +76,7 @@ __version__ = "0.1.0"
 __all__ = [
     "ALL_CAPABILITIES",
     "CAP_EVENTS",
+    "CAP_IR_CAPTURE",
     "CAP_IR_RAW",
     "CAP_LEGACY",
     "CAP_MDNS",
@@ -116,6 +121,8 @@ __all__ = [
     "HubEvent",
     "HubStatus",
     "Inventory",
+    "IrReceivedEvent",
+    "IrSignal",
     "KeyAction",
     "MqttInfo",
     "RemoteButton",
@@ -123,5 +130,6 @@ __all__ = [
     "RfStatus",
     "RfStatusEvent",
     "Snapshot",
+    "UpdateStatus",
     "parse",
 ]

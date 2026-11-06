@@ -193,3 +193,19 @@ async def test_ir_raw_validation(
     with pytest.raises(ValueError, match=match):
         await client.ir_raw(frequency, timings, port=port, repeats=repeats)
     assert hub.requests == []
+
+
+async def test_update_and_capture(client: HarmonyNgClient, hub: FakeHub) -> None:
+    hub.responses["/api/update-status"] = (200, load_json("update_status"))
+    hub.responses["/api/update-check"] = (200, load_json("update_check"))
+    status = await client.get_update_status()
+    assert status.latest_version == "2.3.0"
+    check = await client.update_check()
+    assert check.update_available
+    await client.update_apply()
+    await client.ir_capture(True)
+    assert hub.requests[-3:] == [
+        ("POST", "/api/update-check", {}),
+        ("POST", "/api/update-apply", {}),
+        ("POST", "/api/ir-capture", {"enabled": True}),
+    ]

@@ -488,3 +488,38 @@ async def test_status_before_ready(hass: HomeAssistant) -> None:
     message = type("Message", (), {"topic": f"{BASE}/status", "payload": "online"})()
     transport._handle_status(message)
     assert not transport.connected
+
+
+async def test_update_and_capture(
+    hass: HomeAssistant, mqtt_entry: MockConfigEntry, mqtt_mock: MqttMockHAClient
+) -> None:
+    await setup_mqtt(hass, mqtt_entry)
+    transport = mqtt_entry.runtime_data.coordinator.transport
+    assert isinstance(transport, MqttTransport)
+    result, _, request = await answer(
+        hass,
+        mqtt_mock,
+        transport.update_check,
+        {
+            "ok": True,
+            "current_version": "2.2.0",
+            "remote_version": "v2.3.0",
+            "update_available": True,
+        },
+    )
+    assert request["action"] == "update_check"
+    assert result.latest_version == "2.3.0"
+    for action, expected in (
+        (transport.update_apply, {"action": "update_apply"}),
+        (lambda: transport.ir_capture(True), {"action": "ir_capture", "enabled": True}),
+    ):
+        _, _, request = await answer(hass, mqtt_mock, action, {"ok": True})
+        assert {k: v for k, v in request.items() if k != "id"} == expected
+
+    received: list[Any] = []
+    mqtt_entry.runtime_data.coordinator.async_add_ir_listener(received.append)
+    async_fire_mqtt_message(
+        hass, f"{BASE}/ir/received", json.dumps(load_frames("ws_ir_received")[0])
+    )
+    await hass.async_block_till_done()
+    assert received[0].modulation == 38000

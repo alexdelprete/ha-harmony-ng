@@ -22,6 +22,7 @@ from custom_components.harmony_ng.pyharmonyng import (
     Inventory,
     KeyAction,
     Snapshot,
+    UpdateStatus,
     parse,
 )
 from homeassistant.const import CONF_HOST, CONF_PORT
@@ -46,6 +47,9 @@ class FakeTransport:
         )
         self.inventory = Inventory.from_json(load_json("inventory"))
         self.help_result = HelpResult.from_json(load_json("help"))
+        self.update_status = UpdateStatus.from_json(
+            {**load_json("update_status"), "message": load_json("update_check")["message"]}
+        )
         self.calls: list[tuple[str, tuple[Any, ...]]] = []
         self.errors: dict[str, Exception] = {}
         self.connect_error: Exception | None = None
@@ -132,6 +136,16 @@ class FakeTransport:
     async def activity_help_answer(self, device_id: str, on: bool) -> None:
         self._record("activity_help_answer", device_id, on)
 
+    async def update_check(self) -> UpdateStatus:
+        self._record("update_check")
+        return self.update_status
+
+    async def update_apply(self) -> None:
+        self._record("update_apply")
+
+    async def ir_capture(self, enabled: bool) -> None:
+        self._record("ir_capture", enabled)
+
     # Test helpers
 
     def _record(self, name: str, *args: Any) -> None:
@@ -145,7 +159,14 @@ class FakeTransport:
             c
             for c in self.calls
             if c[0]
-            not in ("connect", "disconnect", "fetch_inventory", "fetch_activities", "set_token")
+            not in (
+                "connect",
+                "disconnect",
+                "fetch_inventory",
+                "fetch_activities",
+                "set_token",
+                "update_check",
+            )
         ]
 
     def push(self, frame: dict[str, Any]) -> None:

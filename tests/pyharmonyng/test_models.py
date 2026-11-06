@@ -16,11 +16,13 @@ from custom_components.harmony_ng.pyharmonyng import (
     HelpResult,
     HubStatus,
     Inventory,
+    IrSignal,
     MqttInfo,
     RemoteButton,
     RfSlot,
     RfStatus,
     Snapshot,
+    UpdateStatus,
 )
 from custom_components.harmony_ng.pyharmonyng.models import _bool, _int, _opt_int, _opt_str, _str
 
@@ -210,3 +212,16 @@ def test_helpers_tolerate_odd_values() -> None:
     assert _str({"a": None, "b": 3}, "a", "b") == "3"
     assert _opt_str({"a": ""}, "a") is None
     assert _bool({"a": 0}, "a", default=True) is False
+
+
+def test_update_status_and_ir_signal() -> None:
+    status = UpdateStatus.from_json(load_json("update_status"))
+    assert status == UpdateStatus("2.2.0", "2.3.0", True, "")
+    check = UpdateStatus.from_json(load_json("update_check"))
+    assert check == UpdateStatus("2.2.0", None, True, "A newer release is available (v2.3.0).")
+    signal = IrSignal.from_json(load_frames("ws_ir_received")[0])
+    assert signal.modulation == 38000
+    assert signal.timings[:2] == (9000, -4500)
+    assert IrSignal.from_json({"timings": ["x", 1.5], "frequency": "36000"}) == IrSignal(
+        (1,), 36000
+    )

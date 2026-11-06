@@ -23,6 +23,7 @@ from .models import (
     Inventory,
     KeyAction,
     RfStatus,
+    UpdateStatus,
 )
 
 DEFAULT_PORT: Final = 8089
@@ -276,3 +277,19 @@ class HarmonyNgClient:
     async def activity_help_answer(self, device_id: str, *, on: bool) -> None:
         """Answer the Help question for one device: `on` false sends its power toggle."""
         await self._post("/api/activity/help/answer", {"device": device_id, "on": on})
+
+    async def get_update_status(self) -> UpdateStatus:
+        """Return the running and the last known remote firmware versions."""
+        return UpdateStatus.from_json(await self._get("/api/update-status"))
+
+    async def update_check(self) -> UpdateStatus:
+        """Ask the Hub to look for a newer release."""
+        return UpdateStatus.from_json(await self._post("/api/update-check"))
+
+    async def update_apply(self) -> None:
+        """Install the available release; the Hub restarts its services."""
+        await self._post("/api/update-apply")
+
+    async def ir_capture(self, enabled: bool) -> None:
+        """Start or stop infrared capture; captured signals arrive as `ir_received` events."""
+        await self._post("/api/ir-capture", {"enabled": enabled})

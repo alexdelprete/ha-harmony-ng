@@ -34,7 +34,7 @@ async def test_setup_and_unload(
 ) -> None:
     entry = init_integration
     assert entry.state is ConfigEntryState.LOADED
-    assert [c[0] for c in fake_transport.calls] == [
+    assert [c[0] for c in fake_transport.calls if c[0] != "update_check"] == [
         "connect",
         "fetch_activities",
         "fetch_inventory",

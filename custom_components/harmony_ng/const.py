@@ -20,6 +20,7 @@ PLATFORMS: Final = [
     Platform.REMOTE,
     Platform.SELECT,
     Platform.SENSOR,
+    Platform.UPDATE,
 ]
 
 # Config entry data
@@ -75,3 +76,9 @@ POWER_OFF_LABEL: Final = "PowerOff"
 
 # Infrared emitter entities, one per output
 IR_EMITTERS: Final = {"ir_front": 1, "ir_jack1": 2, "ir_jack2": 4}
+
+RELEASE_URL: Final = "https://github.com/iranl/harmony-ng/releases"
+UPDATE_CHECK_INTERVAL_HOURS: Final = 24
+
+# Child devices: configured IR and Bluetooth devices of the Hub
+DEVICE_IDENTIFIER_PREFIX: Final = "device"

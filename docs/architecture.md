@@ -150,6 +150,7 @@ repository's docs folder, one pull request per milestone on the fork.
 | Remote button event with release, never dropped | Shared | http_api_remotes.c | 20 to 30 | Replaces the MQTT-only dispatch |
 | hub_rf pushes RF status instead of being polled | Shared | rf_api.c, hub_daemon.c | 40 to 60 | Removes the 1 s poll in the watcher |
 | Remote unit id over RF | Shared | elite_ui, rf_main.c | 60 to 100 | The remote reads its manufacturing partition and reports it; rf_status gains remote_id per slot |
+| Infrared capture mode and ir_received event | API | http_api_commands.c, ir_i2s.c, ir_encoder.c | 80 to 120 | Serves the infrared receiver entity; capture pauses for sends and shares the timing representation with the encoder |
 | WebSocket sink for every bus event | API | hub_ws.c | 80 to 120 | Reuses existing JSON builders |
 | WebSocket auth on upgrade with PAT or Bearer | API | http_server.c, http_auth.c, ws_server.c | 40 to 60 | Closes the documented but missing token check |
 | Server keepalive ping and dead-client reaping | API | ws_server.c | 30 to 50 | Clients today only drop on send failure |
@@ -176,11 +177,11 @@ repository's docs folder, one pull request per milestone on the fork.
 
 | Milestone | New lines |
 | --- | --- |
-| Shared event model and API layer | 600 to 890 |
+| Shared event model and API layer | 680 to 1010 |
 | mDNS | 200 to 300 |
 | MQTT rewrite | 770 to 1180 |
 | Legacy shim with SSDP and toggle | 940 to 1390 |
-| Everything | 2530 to 3720 |
+| Everything | 2610 to 3840 |
 
 <!-- pyml enable md013 -->
 
@@ -311,7 +312,7 @@ identical registry entries and switching between them changes nothing in the ent
 | --- | --- | --- | --- |
 | Hub | (harmony_ng, hub id) | Root device of the config entry | manufacturer Logitech, model Harmony Hub, model_id from skin, sw_version harmony-ng version, hw_version Logitech base firmware, configuration_url `http://host:8089`, serial_number hub id |
 | RF remote, one per paired remote | (harmony_ng, remote id), the remote's own unit id read from its manufacturing partition and reported over RF; the slot number is an attribute | via_device_id to the Hub, since it is a separate product with its own firmware and battery | model from the slot (Elite, Ultimate), sw_version remote firmware |
-| Configured IR or BT device | not created in the first release | Candidate for child devices later, one level under the Hub | name, manufacturer, model from the inventory |
+| Configured IR or BT device | (harmony_ng, hub id:device:id), a child device of the Hub | One remote entity per device for send_command without naming the device; added and retired as the inventory changes | name, manufacturer, model from the inventory |
 
 <!-- pyml enable md013 -->
 
@@ -336,7 +337,7 @@ identical registry entries and switching between them changes nothing in the ent
 | button | Sleep remote | command | Remote slot | config | per slot |
 | button | Cancel activity | command | Hub | config | resets a stuck interlock |
 | event | Remote button | button events | Remote slot | none | event types press and release with the button name as attribute; uses the standard button event types |
-| update | Hub firmware | update-status endpoints | Hub | config | later release, once update-apply is validated |
+| update | Hub firmware | update-status endpoints | Hub | config | first release; installed version from the status, latest from the Hub's release check polled daily; install calls update-apply and the Hub restarts |
 | infrared | IR emitter, one per output: front blaster, jack 1, jack 2 | raw IR endpoint | Hub | none | first release; subclasses InfraredEmitterEntity; Home Assistant supplies raw timings and a carrier, the Hub never sees Pronto; lets core IR integrations such as lg_infrared or samsung_infrared use the Hub as their blaster |
 
 <!-- pyml enable md013 -->
@@ -435,8 +436,9 @@ it can be tested end to end. The scaffolding update is independent and lands fir
    discovery entities removed, release note naming the integration as the replacement.
 6. Integration milestone 2: MQTT transport, transport step in the config flow, parity tests that run the same entity
    snapshots on both backends.
-7. Later: update entity, infrared receiver if capture can coexist with sending, child devices for configured IR and BT
-   devices.
+7. Integration milestone 3: update entity, infrared receiver (needs the firmware's capture item), child devices with a
+   remote per configured device. Written ahead of the firmware; the receiver stays unavailable until the Hub lists
+   ir_capture.
 
 <!-- pyml disable md013 -->
 

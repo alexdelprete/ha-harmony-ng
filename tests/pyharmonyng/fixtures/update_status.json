@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "current_version": "2.2.0",
+  "version": "2.2.0",
+  "local_version": "v2.2.0 (abc1234)",
+  "remote_version": "v2.3.0",
+  "commit": "abc1234",
+  "build_time": "Nov 06 2026 10:00:00",
+  "fw_version": "4.15.600",
+  "firmware": "4.15.600",
+  "rf_version": "0x27 CC2544",
+  "bt_version": "BTstack v1.5 (UART)",
+  "arch": "mips (AR9344)",
+  "update_available": true
+}

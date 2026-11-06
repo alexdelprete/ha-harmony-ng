@@ -98,4 +98,7 @@ async def async_remove_config_entry_device(
     for rf_slot in coordinator.data.rf.active_slots:
         if coordinator.remote_identifier(rf_slot.slot) in identifiers:
             return False
+    for configured in coordinator.data.inventory.devices:
+        if coordinator.child_identifier(configured.id) in identifiers:
+            return False
     return True

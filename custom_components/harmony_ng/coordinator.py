@@ -12,12 +12,13 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr, entity_registry as er, issue_registry as ir
 from homeassistant.helpers.debounce import Debouncer
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_TRANSPORT,
+    DEVICE_IDENTIFIER_PREFIX,
     DOMAIN,
     ISSUE_FIRMWARE_TOO_OLD,
     ISSUE_LEGACY_ENABLED,
@@ -41,6 +42,8 @@ from .pyharmonyng import (
     HubEvent,
     HubStatus,
     Inventory,
+    IrReceivedEvent,
+    IrSignal,
     RemoteButton,
     RfSlot,
     RfStatus,
@@ -55,6 +58,7 @@ REFETCH_COOLDOWN = 2.0
 """Seconds to coalesce inventory refetches after config changes."""
 
 type ButtonListener = Callable[[RemoteButton], None]
+type IrListener = Callable[[IrSignal], None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -124,6 +128,7 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         self._state: HubState | None = None
         self._last_activity_id: str | None = None
         self._button_listeners: dict[int, list[ButtonListener]] = {}
+        self._ir_listeners: list[IrListener] = []
         transport.set_callbacks(
             on_event=self._handle_event,
             on_connection=self._handle_connection,
@@ -249,7 +254,37 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
             via_device_id=hub.id if hub is not None else None,
         )
 
-    # Button events
+    def child_identifier(self, device_id: str) -> str:
+        """Return the registry identifier of a configured device's child device."""
+        return f"{self.hub_id}:{DEVICE_IDENTIFIER_PREFIX}:{device_id}"
+
+    def child_device_info(self, device_id: str) -> ChildDeviceInfo:
+        """Return the child device info of a configured IR or Bluetooth device."""
+        hub = dr.async_get(self.hass).async_get_device_by_identifier(
+            (DOMAIN, self.hub_id), self.config_entry.entry_id
+        )
+        if hub is None:
+            raise ValueError("the Hub device is not registered yet")
+        state = self.data or self._state
+        device = state.inventory.device(device_id) if state else None
+        return ChildDeviceInfo(
+            identifiers={(DOMAIN, self.child_identifier(device_id))},
+            name=device.name if device else device_id,
+            parent_device_id=hub.id,
+        )
+
+    # Pushed signals that are not state
+
+    @callback
+    def async_add_ir_listener(self, listener: IrListener) -> Callable[[], None]:
+        """Subscribe to captured infrared signals; returns the unsubscribe callback."""
+        self._ir_listeners.append(listener)
+
+        @callback
+        def unsubscribe() -> None:
+            self._ir_listeners.remove(listener)
+
+        return unsubscribe
 
     @callback
     def async_add_button_listener(self, slot: int, listener: ButtonListener) -> Callable[[], None]:
@@ -276,6 +311,9 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         if isinstance(event, ButtonEvent):
             for listener in list(self._button_listeners.get(event.button.slot, ())):
                 listener(event.button)
+        if isinstance(event, IrReceivedEvent):
+            for ir_listener in list(self._ir_listeners):
+                ir_listener(event.signal)
         self._set_state(new_state)
         if isinstance(event, ConfigChangedEvent) and event.inventory_changed:
             self.config_entry.async_create_background_task(

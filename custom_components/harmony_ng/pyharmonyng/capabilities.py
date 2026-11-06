@@ -16,6 +16,7 @@ CAP_SNAPSHOT: Final = "snapshot"
 CAP_WS_AUTH: Final = "ws_auth"
 CAP_WS_KEEPALIVE: Final = "ws_keepalive"
 CAP_IR_RAW: Final = "ir_raw"
+CAP_IR_CAPTURE: Final = "ir_capture"
 CAP_RF_WAKE: Final = "rf_wake"
 CAP_MDNS: Final = "mdns"
 CAP_MQTT_V2: Final = "mqtt_v2"
@@ -28,6 +29,7 @@ ALL_CAPABILITIES: Final = frozenset(
         CAP_WS_AUTH,
         CAP_WS_KEEPALIVE,
         CAP_IR_RAW,
+        CAP_IR_CAPTURE,
         CAP_RF_WAKE,
         CAP_MDNS,
         CAP_MQTT_V2,
