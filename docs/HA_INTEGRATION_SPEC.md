@@ -463,9 +463,8 @@ live in `icons.json` per key, with state icons for `activity_state`, `charging` 
 ## 3. Quality scale mapping
 
 The tier is self-declared; `quality_scale.yaml` tracks every rule and `manifest.json` declares the
-highest tier with every rule done or exempt: `silver` until discovery lands with firmware
-milestone 2, then `platinum`, since the Gold and Platinum rules are already met in code. The
-non-obvious ones:
+highest tier with every rule done or exempt: `platinum`, since every Gold and Platinum rule is met
+in code and the Hub announces itself over mDNS since firmware milestone 2. The non-obvious ones:
 
 <!-- pyml disable md013 -->
 
@@ -479,7 +478,7 @@ non-obvious ones:
 | `entity-unavailable`, `log-when-unavailable` | 2.3; no manual logging |
 | `parallel-updates` | 2.7 |
 | `reauthentication-flow`, `reconfiguration-flow` | 2.5 |
-| `discovery`, `discovery-update-info` | zeroconf step with address update; `todo` until firmware milestone 2 ships, then `done` |
+| `discovery`, `discovery-update-info` | zeroconf step with address update; `done`, the firmware announces `_harmony-ng._tcp` since milestone 2 |
 | `dynamic-devices`, `stale-devices` | remote devices appear when a slot activates; Bluetooth host entities follow the paired list; `async_remove_config_entry_device` for inactive slots |
 | `entity-category`, `entity-device-class`, `entity-disabled-by-default`, `entity-translations`, `icon-translations`, `exception-translations` | 2.7, 2.8, 2.10 |
 | `repair-issues`, `diagnostics` | 2.9 |
