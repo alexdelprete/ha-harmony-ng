@@ -14,7 +14,7 @@ authors = [{ name = "alexdelprete" }]
 [project.optional-dependencies]
 dev = [
     "homeassistant>=2026.8.0",
-    "homeassistant-stubs",
+    "homeassistant-stubs==2026.9.3",
     "mdformat",
     "mdformat-gfm",
     "pre-commit",
@@ -29,7 +29,7 @@ dev = [
 
 [dependency-groups]
 lint = [
-    "homeassistant-stubs",
+    "homeassistant-stubs==2026.9.3",
     "mdformat",
     "mdformat-gfm",
     "pre-commit",
