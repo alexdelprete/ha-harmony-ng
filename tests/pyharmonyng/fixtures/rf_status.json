@@ -1,0 +1,48 @@
+{
+  "ok": true,
+  "running": true,
+  "state": "running",
+  "connected": true,
+  "pairing_active": false,
+  "paired": true,
+  "rf_address": "00000000",
+  "hub_rf_address": "00000000",
+  "slots": [
+    {
+      "slot": 1,
+      "active": true,
+      "address": "12345678",
+      "rf_address": "12345678",
+      "remote_id": "20141001120000-000002",
+      "model": "Harmony Ultimate",
+      "has_screen": true,
+      "supports_ota": true,
+      "sw_version": "2.2.0",
+      "battery": {
+        "percent": 87,
+        "charging": false,
+        "voltage_mv": 3980
+      },
+      "config_version": 12,
+      "hub_config_version": 12,
+      "in_sync": true,
+      "link": {
+        "frames_rx": 1520,
+        "acked_sent": 412,
+        "acked_ok": 398,
+        "retries": 14,
+        "naks": 9,
+        "last_seen_s": 2
+      }
+    },
+    {
+      "slot": 2,
+      "active": false,
+      "address": "None",
+      "rf_address": "None",
+      "model": "None",
+      "has_screen": false,
+      "supports_ota": false
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+{
+  "type": "snapshot",
+  "hub": {
+    "hub_id": "20140101120000-000001",
+    "hub_name": "Living Room Hub",
+    "version": "2.2.0",
+    "commit": "abc1234",
+    "api_version": 2,
+    "capabilities": [
+      "events",
+      "snapshot",
+      "ws_auth",
+      "ws_keepalive",
+      "ir_raw",
+      "rf_wake"
+    ],
+    "auth_enabled": false,
+    "uptime_sec": 34821,
+    "legacy_enabled": false,
+    "mdns_enabled": true
+  },
+  "activity_state": {
+    "activity": "-1",
+    "state": 0,
+    "busy": false,
+    "sending": false
+  },
+  "bt_status": {
+    "running": true,
+    "connected": true,
+    "target": "AA:BB:CC:DD:EE:FF",
+    "devices": [
+      {
+        "bdaddr": "AA:BB:CC:DD:EE:FF",
+        "name": "Apple TV"
+      },
+      {
+        "bdaddr": "11:22:33:44:55:66",
+        "name": "Shield"
+      }
+    ]
+  },
+  "rf_status": {
+    "running": true,
+    "state": "running",
+    "connected": true,
+    "pairing_active": false,
+    "paired": true,
+    "rf_address": "00000000",
+    "hub_rf_address": "00000000",
+    "slots": [
+      {
+        "slot": 1,
+        "active": true,
+        "address": "12345678",
+        "rf_address": "12345678",
+        "remote_id": "20141001120000-000002",
+        "model": "Harmony Ultimate",
+        "has_screen": true,
+        "supports_ota": true,
+        "sw_version": "2.2.0",
+        "battery": {
+          "percent": 87,
+          "charging": false,
+          "voltage_mv": 3980
+        },
+        "config_version": 12,
+        "hub_config_version": 12,
+        "in_sync": true,
+        "link": {
+          "frames_rx": 1520,
+          "acked_sent": 412,
+          "acked_ok": 398,
+          "retries": 14,
+          "naks": 9,
+          "last_seen_s": 2
+        }
+      },
+      {
+        "slot": 2,
+        "active": false,
+        "address": "None",
+        "rf_address": "None",
+        "model": "None",
+        "has_screen": false,
+        "supports_ota": false
+      }
+    ]
+  },
+  "config": {
+    "files": {
+      "devices": 1762387000,
+      "activities": 1762387000,
+      "settings": 1762380000,
+      "remote_map": 1762387000
+    }
+  },
+  "seq": 42,
+  "ts": 1762387200
+}

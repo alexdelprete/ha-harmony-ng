@@ -1,0 +1,35 @@
+{
+  "ok": true,
+  "firmware": "4.15.600",
+  "activity": "-1",
+  "state": 0,
+  "busy": false,
+  "ip": "192.0.2.10",
+  "total_kb": 5120,
+  "free_kb": 1712,
+  "role": "admin",
+  "user": "admin",
+  "mqtt": {
+    "connected": false,
+    "broker": "",
+    "port": 1883,
+    "baseTopic": "harmony/hub"
+  },
+  "hub_id": "20140101120000-000001",
+  "hub_name": "Living Room Hub",
+  "version": "2.2.0",
+  "commit": "abc1234",
+  "api_version": 2,
+  "capabilities": [
+    "events",
+    "snapshot",
+    "ws_auth",
+    "ws_keepalive",
+    "ir_raw",
+    "rf_wake"
+  ],
+  "auth_enabled": false,
+  "uptime_sec": 34821,
+  "legacy_enabled": false,
+  "mdns_enabled": true
+}

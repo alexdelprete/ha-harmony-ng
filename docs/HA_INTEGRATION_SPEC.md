@@ -68,7 +68,7 @@ class HarmonyNgClient:
                  token: str | None = None, request_timeout: float = 10.0) -> None: ...
     async def get_status(self) -> HubStatus
     async def get_inventory(self) -> Inventory          # devices with command names only
-    async def get_activities(self) -> Activities         # list plus current id and state
+    async def get_activities(self) -> tuple[Activity, ...]
     async def get_activity_state(self) -> ActivityState
     async def get_rf_status(self) -> RfStatus
     async def get_bt_status(self) -> BtStatus
@@ -76,8 +76,7 @@ class HarmonyNgClient:
     async def power_off(self) -> None
     async def cancel_activity(self) -> None
     async def send_command(self, device_id: str, command: str, *,
-                           action: CommandAction = CommandAction.TAP, repeats: int = 1) -> None
-    async def ir_send(self, device_id: str, command: str, *, port: int = 7, repeats: int = 1) -> None
+                           port: int | None = None, repeats: int = 1) -> None   # one tap
     async def ir_raw(self, frequency: int, timings: Sequence[int], *, port: int = 7,
                      repeats: int = 1) -> None
     async def bt_key(self, key: str, *, action: KeyAction = KeyAction.TAP,
@@ -86,14 +85,16 @@ class HarmonyNgClient:
     async def rf_sleep(self, slot: int) -> None
     async def push_config(self) -> None                  # "sync remotes"
     async def activity_help(self) -> HelpResult
-    async def activity_help_answer(self, device_id: str, on: bool) -> None
+    async def activity_help_answer(self, device_id: str, *, on: bool) -> None
 ```
 
+- Press, hold and release are not on the REST API (`/api/ir-send` sends a tap); they go through
+  the listener's `send_command`, which uses the WebSocket `cmdAction` field.
 - The session is injected and never closed by the library (Platinum `inject-websession`).
 - Every call maps HTTP errors to exceptions (1.5). A `409` becomes `HarmonyNgBusyError`. A `401`
-  becomes `HarmonyNgAuthError`. Connection and timeout errors become `HarmonyNgConnectionError`. Any
-  other non-2xx or a body without `ok` or `success` becomes `HarmonyNgApiError` with the Hub's
-  `error` string.
+  or `403` becomes `HarmonyNgAuthError`. Connection and timeout errors become
+  `HarmonyNgConnectionError`. Any other non-2xx, or a 2xx body whose `ok` or `success` is false,
+  becomes `HarmonyNgApiError` with the Hub's `error` string and the status code.
 - `get_status` raises `HarmonyNgUnsupportedError` when the reply has no `hub_id` or an `api_version`
   below `MIN_API_VERSION` (firmware before milestone 1) and exposes `HubStatus.capabilities` as a
   frozenset of strings.
@@ -105,10 +106,19 @@ class HarmonyNgClient:
 class HarmonyNgListener:
     def __init__(self, host: str, session: aiohttp.ClientSession, *, port: int = 8089,
                  token: str | None = None, on_event: Callable[[HubEvent], None],
-                 on_connection: Callable[[bool], None]) -> None: ...
+                 on_connection: Callable[[bool], None],
+                 on_snapshot: Callable[[Snapshot], None] | None = None) -> None: ...
     async def start(self) -> Snapshot        # connects, returns the first snapshot
     async def stop(self) -> None
     async def request_snapshot(self) -> Snapshot
+    async def send_action(self, action: str, **fields) -> Mapping[str, Any]   # awaits the ack
+    async def start_activity(self, activity_id: str) -> None
+    async def power_off(self) -> None
+    async def cancel_activity(self) -> None
+    async def send_command(self, device_id: str, command: str, *,
+                           action: CommandAction = CommandAction.TAP) -> None
+    async def bt_key(self, key: str, *, action: KeyAction = KeyAction.TAP,
+                     target: str | None = None) -> None
     @property
     def connected(self) -> bool
     @property
@@ -125,7 +135,12 @@ class HarmonyNgListener:
   `Snapshot.gap = True` when events were missed, so the coordinator refetches inventory.
 - Answers server pings (aiohttp does) and treats 45 s of silence as a dead socket (the server
   pings every 30 s).
-- `on_connection(False)` fires on loss, `on_connection(True)` after the snapshot of a reconnect.
+- `on_connection(False)` fires on loss, `on_connection(True)` after the snapshot of a reconnect,
+  which is delivered through `on_snapshot` (as is any unsolicited snapshot the Hub sends).
+- Requests over the socket carry a `msgId`; the matching acknowledgement resolves them. An
+  acknowledgement with `ok` false raises `HarmonyNgBusyError` when its error mentions busy,
+  otherwise `HarmonyNgApiError`; no acknowledgement within 10 s raises `HarmonyNgConnectionError`.
+  Pending requests fail when the socket drops.
 
 ### 1.4 Models
 

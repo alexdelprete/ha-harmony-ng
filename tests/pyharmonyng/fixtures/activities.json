@@ -1,0 +1,24 @@
+{
+  "activities": [
+    {
+      "id": "123456",
+      "name": "Watch TV",
+      "type": "Custom",
+      "icon": "tv.png",
+      "order": 1,
+      "startSequence": [],
+      "stopSequence": []
+    },
+    {
+      "id": "234567",
+      "name": "Listen to Music",
+      "type": "Custom",
+      "icon": "music.png",
+      "order": 2,
+      "startSequence": [],
+      "stopSequence": []
+    }
+  ],
+  "currentId": "-1",
+  "state": 0
+}
