@@ -465,31 +465,40 @@ class BtStatus:
     def from_json(cls, data: JsonDict) -> Self:
         """Build from `GET /api/bt-status`, a `bt_status` event or a snapshot.
 
-        The stack lists its hosts under `hosts` with the address in `addr` and a
-        `connected` flag of their own. Without that flag, a host counts as
-        connected when the stack reports a connection and the host is the target.
+        The Bluetooth daemon writes its status file with a `pid`, the active host
+        under `host` and every host under `hosts`, each with `addr` and a
+        `connected` flag of its own; its top-level `target` is the physical
+        remote's address. It writes no top-level `running` or `connected`. The
+        shape the API document describes has those two, `target` as the host and
+        hosts without a flag, where a host counts as connected when the stack
+        reports a connection and the host is the target.
         """
-        connected = _bool(data, "connected")
-        target = _opt_str(data, "target")
+        active = data.get("host")
+        active_host: Mapping[str, Any] = active if isinstance(active, Mapping) else {}
+        items = [item for item in _list(data, "hosts", "devices") if isinstance(item, Mapping)]
+        if "connected" in data:
+            connected = _bool(data, "connected")
+        elif "connected" in active_host:
+            connected = _bool(active_host, "connected")
+        else:
+            connected = any(_bool(item, "connected") for item in items)
+        if active_host:
+            target = _opt_str(active_host, "addr") if connected else None
+        else:
+            target = _opt_str(data, "target")
         target_key = target.casefold() if target else None
         hosts: list[BtHost] = []
-        for item in _list(data, "hosts", "devices"):
-            if not isinstance(item, Mapping):
-                continue
+        for item in items:
             address = _str(item, "addr", "bdaddr")
-            host_connected = (
+            # A top-level flag, where there is one, still overrides the host's own
+            host_connected = connected and (
                 _bool(item, "connected")
                 if item.get("connected") is not None
                 else address.casefold() == target_key
             )
-            hosts.append(
-                BtHost(
-                    bdaddr=address, name=_str(item, "name"), connected=connected and host_connected
-                )
-            )
-        return cls(
-            running=_bool(data, "running"), connected=connected, target=target, hosts=tuple(hosts)
-        )
+            hosts.append(BtHost(bdaddr=address, name=_str(item, "name"), connected=host_connected))
+        running = _bool(data, "running") if "running" in data else _int(data, "pid") > 0
+        return cls(running=running, connected=connected, target=target, hosts=tuple(hosts))
 
 
 @dataclass(frozen=True, slots=True)

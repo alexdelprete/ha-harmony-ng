@@ -265,3 +265,21 @@ def test_bt_status_documented_shape() -> None:
         ("AA:BB:CC:DD:EE:FF", True),
         ("11:22:33:44:55:66", False),
     ]
+
+
+def test_bt_status_daemon_file() -> None:
+    """The Bluetooth daemon's own status file: no top-level running or connected flag."""
+    status = BtStatus.from_json(load_json("bt_status_daemon"))
+    assert status.running
+    assert status.connected
+    # The top-level target is the physical remote; the connected host is under host
+    assert status.target == "11:22:33:44:55:66"
+    assert [(h.name, h.connected) for h in status.hosts] == [("Apple TV", False), ("Shield", True)]
+    idle = load_json("bt_status_daemon")
+    idle["host"]["connected"] = False
+    idle["hosts"][1]["connected"] = False
+    status = BtStatus.from_json(idle)
+    assert not status.connected
+    assert status.target is None
+    assert not any(h.connected for h in status.hosts)
+    assert not BtStatus.from_json({"hosts": []}).running

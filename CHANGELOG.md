@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Bluetooth hosts always showed disconnected and the stack not running. The Hub forwards the
+  Bluetooth daemon's status file, which has a connected flag per host but no top-level
+  `connected` or `running`; the parser required the top-level flag. The connected host is now
+  read from the file's `host` entry, whose top-level `target` is the physical remote.
+
 ## [0.1.2] - 2026-11-07
 
 ### Added
