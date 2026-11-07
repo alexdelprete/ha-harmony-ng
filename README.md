@@ -80,6 +80,8 @@ The Hub is found automatically on the local network. Otherwise add the integrati
 | Parameter | Where | Meaning |
 | --- | --- | --- |
 | Host, port | setup and reconfigure | The Hub's address and API port, 8089 by default |
+| Transport | setup and reconfigure | API, the default: direct to the Hub. MQTT: through your broker and the Home Assistant MQTT integration. Both give the same entities, and switching keeps them |
+| MQTT base topic | setup and reconfigure, MQTT only | The base topic configured on the Hub, `harmony/hub` by default |
 | Personal Access Token | setup, reauthenticate, reconfigure | Only when the Hub has authentication enabled; create one in the Hub's web UI under Users |
 | Default activity | options | Activity started by `remote.turn_on` without an activity: the previous one or a named one |
 | Delay between commands | options | Seconds between the commands of one `remote.send_command` call, 0.4 by default |
@@ -137,7 +139,7 @@ data:
 # Act on a key of the physical remote
 triggers:
   - trigger: event
-    entity_id: event.harmony_ultimate_1_button
+    entity_id: event.harmony_ultimate_button
     event_type: press
 conditions:
   - condition: template
@@ -146,10 +148,10 @@ conditions:
 
 ## Data updates
 
-The Hub pushes events over its WebSocket; nothing is polled. Inventory and activities are read
-once at startup and again when the Hub reports a configuration change. If the connection drops,
-every entity becomes unavailable until the integration reconnects, which it does with increasing
-delays up to 30 seconds.
+The Hub pushes events over its WebSocket, or over MQTT on that transport; nothing is polled.
+Inventory and activities are read once at startup and again when the Hub reports a configuration
+change. If the connection drops, every entity becomes unavailable until the integration reconnects,
+which it does with increasing delays up to 30 seconds.
 
 ## Known limitations
 
@@ -159,13 +161,18 @@ delays up to 30 seconds.
   slot until the id arrives, and re-keyed automatically when it does.
 - Infrared emitters send raw timings only; Pronto codes go through the Hub's own device
   commands, not through the emitter entities.
-- MQTT as an alternative transport arrives in a later release.
+- The MQTT transport needs MQTT enabled on the Hub, firmware with the MQTT rewrite, and the
+  Home Assistant MQTT integration. Over MQTT, the firmware update check and Help need firmware
+  whose command channel has those actions; on older firmware the update entity stays unknown.
+- A remote's product name (Harmony Ultimate, Elite, 950 and so on) needs firmware that reports
+  it. Until then a touchscreen remote is shown as "Harmony remote" without a model.
 
 ## Troubleshooting
 
 - **Cannot connect** during setup: check that the Hub answers at `http://<host>:8089` in a browser
   and that no firewall sits between Home Assistant and the Hub.
-- **Entities unavailable**: the WebSocket to the Hub dropped. The integration reconnects by
+- **Entities unavailable**: the connection to the Hub dropped (the WebSocket, or the broker on
+  the MQTT transport). The integration reconnects by
   itself; a Hub restart takes about a minute. Diagnostics (three-dot menu of the entry) show the
   last state and the transport's connection flag.
 - **Repair issue about the Logitech protocol**: the Hub has the legacy protocol enabled, so the

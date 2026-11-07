@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-07
+
 ### Added
 
 - One button per activity on the Hub, which starts it.
@@ -34,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Firmware that does not report the product yet names every touchscreen remote `elite`.
   That guess is no longer shown: such a remote is a "Harmony remote" without a model until
   the firmware reports it. Companion and Smart Control remotes keep their names.
+- README: the MQTT transport is documented (it shipped in 0.1.0 but was listed as coming
+  later), and the event example uses the remote's current entity id.
 
 ## [0.1.1] - 2026-11-06
 
@@ -77,6 +81,7 @@ event bus (`api_version` 2 or newer). Requires Home Assistant 2026.11.0 or newer
 - Harmony NG brand images served by the integration.
 - Quality scale `platinum`: every Bronze to Platinum rule done or exempt.
 
-[Unreleased]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/alexdelprete/ha-harmony-ng/releases/tag/v0.1.0
