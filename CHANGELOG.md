@@ -13,6 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Bluetooth daemon's status file, which has a connected flag per host but no top-level
   `connected` or `running`; the parser required the top-level flag. The connected host is now
   read from the file's `host` entry, whose top-level `target` is the physical remote.
+- Firmware update entity: a failed release check stayed unknown for a day, until the next daily
+  check. Right after the Hub boots the check can fail before the Hub reaches the internet. A
+  failed check is now retried after 15 minutes, the check also runs whenever the Hub reconnects,
+  and a failure is logged once.
+
+### Changed
+
+- Remote battery voltage is shown in volts with two decimals ("3.70 V"). In a locale that writes
+  a dot as the thousands separator, "3701 mV" read as "3.701 mV". New installs get volts; an
+  existing sensor keeps its unit until you change it in the entity settings.
+- The Hub's Busy sensor reads "Busy" or "Idle" instead of "Running" or "Not running".
 
 ## [0.1.2] - 2026-11-07
 

@@ -120,7 +120,11 @@
   "entity": {
     "binary_sensor": {
       "busy": {
-        "name": "Busy"
+        "name": "Busy",
+        "state": {
+          "off": "Idle",
+          "on": "Busy"
+        }
       },
       "charging": {
         "name": "Charging"

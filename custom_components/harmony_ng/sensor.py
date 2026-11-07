@@ -72,6 +72,10 @@ SLOT_SENSORS: tuple[HarmonyNgSlotSensorDescription, ...] = (
         key="battery_voltage",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
+        # "3.70 V" rather than "3701 mV", which a locale with a dot as the thousands
+        # separator renders as "3.701 mV"
+        suggested_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        suggested_display_precision=2,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=lambda slot: slot.voltage_mv,
