@@ -3,7 +3,7 @@
   "hub_name": "Test Hub",
   "firmware": "4.15.600",
   "hub_id": "20140101120000-000001",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "commit": "dev",
   "api_version": 2,
   "capabilities": [
@@ -13,6 +13,7 @@
     "ws_keepalive",
     "ir_raw",
     "mdns",
+    "legacy",
     "mqtt_v2",
     "rf_wake"
   ],
@@ -24,14 +25,14 @@
   "busy": false,
   "ip": "127.0.0.1",
   "total_kb": 62914560,
-  "free_kb": 22971136,
+  "free_kb": 22368384,
   "cache_total_kb": 0,
   "cache_free_kb": 0,
   "updating": false,
   "auth_enabled": false,
   "role": "admin",
   "user": "admin",
-  "uptime_sec": 10399,
+  "uptime_sec": 52072,
   "mqtt": {
     "connected": false,
     "broker": "",

@@ -2,8 +2,8 @@
 
 The files under fixtures/firmware are copied unchanged from the harmony-ng
 firmware's tests/fixtures/ha, which the firmware builds with its real writers
-(the RF status builder, hub_btstack's status file): rf_status.json from branch
-fix/rf-battery-restart (e118d2c), the others from fix/hub-boot-time (b9e2232).
+(the RF status builder, hub_btstack's status file), at branch hub/combo
+(ed3068c): the milestone chain plus the fixes the Hub runs.
 The other fixtures are shaped for the integration tests; these keep the parsing
 honest about the key names the firmware really uses.
 """
