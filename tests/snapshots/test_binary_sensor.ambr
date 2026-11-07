@@ -1,5 +1,5 @@
 # serializer version: 1
-# name: test_entities[binary_sensor.harmony_ultimate_1_charging-entry]
+# name: test_entities[binary_sensor.harmony_ultimate_charging-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
       None,
@@ -13,7 +13,7 @@
     'disabled_by': None,
     'domain': 'binary_sensor',
     'entity_category': <EntityCategory.DIAGNOSTIC: 'diagnostic'>,
-    'entity_id': 'binary_sensor.harmony_ultimate_1_charging',
+    'entity_id': 'binary_sensor.harmony_ultimate_charging',
     'has_entity_name': True,
     'hidden_by': None,
     'icon': None,
@@ -36,21 +36,21 @@
     'unit_of_measurement': None,
   })
 # ---
-# name: test_entities[binary_sensor.harmony_ultimate_1_charging-state]
+# name: test_entities[binary_sensor.harmony_ultimate_charging-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'battery_charging',
-      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Harmony Ultimate 1 Charging',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Harmony Ultimate Charging',
     }),
     'context': <ANY>,
-    'entity_id': 'binary_sensor.harmony_ultimate_1_charging',
+    'entity_id': 'binary_sensor.harmony_ultimate_charging',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
     'state': 'off',
   })
 # ---
-# name: test_entities[binary_sensor.harmony_ultimate_1_configuration_out_of_sync-entry]
+# name: test_entities[binary_sensor.harmony_ultimate_configuration_out_of_sync-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
       None,
@@ -64,7 +64,7 @@
     'disabled_by': None,
     'domain': 'binary_sensor',
     'entity_category': <EntityCategory.DIAGNOSTIC: 'diagnostic'>,
-    'entity_id': 'binary_sensor.harmony_ultimate_1_configuration_out_of_sync',
+    'entity_id': 'binary_sensor.harmony_ultimate_configuration_out_of_sync',
     'has_entity_name': True,
     'hidden_by': None,
     'icon': None,
@@ -87,14 +87,14 @@
     'unit_of_measurement': None,
   })
 # ---
-# name: test_entities[binary_sensor.harmony_ultimate_1_configuration_out_of_sync-state]
+# name: test_entities[binary_sensor.harmony_ultimate_configuration_out_of_sync-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
-      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Harmony Ultimate 1 Configuration out of sync',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Harmony Ultimate Configuration out of sync',
     }),
     'context': <ANY>,
-    'entity_id': 'binary_sensor.harmony_ultimate_1_configuration_out_of_sync',
+    'entity_id': 'binary_sensor.harmony_ultimate_configuration_out_of_sync',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,

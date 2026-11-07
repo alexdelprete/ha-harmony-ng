@@ -1,5 +1,5 @@
 # serializer version: 1
-# name: test_entities[sensor.harmony_ultimate_1_battery-entry]
+# name: test_entities[sensor.harmony_ultimate_battery-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
       None,
@@ -13,7 +13,7 @@
     'disabled_by': None,
     'domain': 'sensor',
     'entity_category': <EntityCategory.DIAGNOSTIC: 'diagnostic'>,
-    'entity_id': 'sensor.harmony_ultimate_1_battery',
+    'entity_id': 'sensor.harmony_ultimate_battery',
     'has_entity_name': True,
     'hidden_by': None,
     'icon': None,
@@ -36,22 +36,22 @@
     'unit_of_measurement': '%',
   })
 # ---
-# name: test_entities[sensor.harmony_ultimate_1_battery-state]
+# name: test_entities[sensor.harmony_ultimate_battery-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'battery',
-      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Harmony Ultimate 1 Battery',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Harmony Ultimate Battery',
       <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: '%',
     }),
     'context': <ANY>,
-    'entity_id': 'sensor.harmony_ultimate_1_battery',
+    'entity_id': 'sensor.harmony_ultimate_battery',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
     'state': '87',
   })
 # ---
-# name: test_entities[sensor.harmony_ultimate_1_battery_voltage-entry]
+# name: test_entities[sensor.harmony_ultimate_battery_voltage-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
       None,
@@ -65,7 +65,7 @@
     'disabled_by': None,
     'domain': 'sensor',
     'entity_category': <EntityCategory.DIAGNOSTIC: 'diagnostic'>,
-    'entity_id': 'sensor.harmony_ultimate_1_battery_voltage',
+    'entity_id': 'sensor.harmony_ultimate_battery_voltage',
     'has_entity_name': True,
     'hidden_by': None,
     'icon': None,
@@ -91,15 +91,15 @@
     'unit_of_measurement': <UnitOfElectricPotential.MILLIVOLT: 'mV'>,
   })
 # ---
-# name: test_entities[sensor.harmony_ultimate_1_battery_voltage-state]
+# name: test_entities[sensor.harmony_ultimate_battery_voltage-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'voltage',
-      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Harmony Ultimate 1 Battery voltage',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Harmony Ultimate Battery voltage',
       <EntityStateAttribute.UNIT_OF_MEASUREMENT: 'unit_of_measurement'>: <UnitOfElectricPotential.MILLIVOLT: 'mV'>,
     }),
     'context': <ANY>,
-    'entity_id': 'sensor.harmony_ultimate_1_battery_voltage',
+    'entity_id': 'sensor.harmony_ultimate_battery_voltage',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,

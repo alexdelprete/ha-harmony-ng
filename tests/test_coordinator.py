@@ -20,7 +20,7 @@ from .conftest import HUB_ID, REMOTE_ID, FakeTransport
 from .pyharmonyng.conftest import load_frames, load_json
 
 ACTIVITY_STATE = "sensor.living_room_hub_activity_state"
-BATTERY = "sensor.harmony_ultimate_1_battery"
+BATTERY = "sensor.harmony_ultimate_battery"
 
 
 def fetch_count(transport: FakeTransport) -> int:
@@ -119,7 +119,7 @@ async def test_rf_and_bt_events(
     fake_transport.push(bt)
     await hass.async_block_till_done()
     assert hass.states.get(BATTERY).state == "42"
-    assert hass.states.get("binary_sensor.harmony_ultimate_1_charging").state == "on"
+    assert hass.states.get("binary_sensor.harmony_ultimate_charging").state == "on"
     assert hass.states.get("binary_sensor.living_room_hub_apple_tv_connected").state == "off"
 
 
@@ -198,3 +198,76 @@ async def test_refetch_auth_failure_starts_reauth(
     await hass.async_block_till_done()
     flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
     assert [flow["context"]["source"] for flow in flows] == ["reauth"]
+
+
+def old_firmware_snapshot() -> dict:
+    """A snapshot from firmware that reports every touchscreen remote as `elite`."""
+    data = load_json("snapshot")
+    slot = data["rf_status"]["slots"][0]
+    slot["model"] = "elite"
+    for key in ("model_name", "skin", "equad_id"):
+        del slot[key]
+    return data
+
+
+async def test_remote_named_after_product(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, REMOTE_ID), init_integration.entry_id
+    )
+    assert device is not None
+    assert device.name == "Harmony Ultimate"
+    assert device.model == "Harmony Ultimate"
+
+
+async def test_remote_product_arrives_later(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    """Old firmware's `elite` is a guess: no model until the Hub reports the product."""
+    fake_transport.snapshot = Snapshot.from_json(old_firmware_snapshot())
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    device_registry = dr.async_get(hass)
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, REMOTE_ID), mock_config_entry.entry_id
+    )
+    assert device is not None
+    assert device.name == "Harmony remote"
+    assert device.model is None
+    assert hass.states.get("sensor.harmony_remote_battery") is not None
+
+    device_registry.async_update_device(device.id, name_by_user="Living room remote")
+    fake_transport.push(load_frames("ws_rf_status")[0])
+    await hass.async_block_till_done()
+
+    updated = device_registry.async_get(device.id)
+    assert updated is not None
+    assert updated.model == "Harmony Ultimate"
+    assert updated.name == "Harmony Ultimate"
+    assert updated.name_by_user == "Living room remote"
+    # Entity ids stay what they were when the entities were created.
+    assert hass.states.get("sensor.harmony_remote_battery") is not None
+
+
+async def test_two_remotes_of_one_product(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    frame = load_frames("ws_rf_status")[0]
+    second = dict(frame["slots"][0], slot=2, remote_id="20141001120000-000003")
+    frame["slots"][1] = second
+    fake_transport.push(frame)
+    await hass.async_block_till_done()
+
+    device_registry = dr.async_get(hass)
+    first = device_registry.async_get_device_by_identifier(
+        (DOMAIN, REMOTE_ID), init_integration.entry_id
+    )
+    other = device_registry.async_get_device_by_identifier(
+        (DOMAIN, "20141001120000-000003"), init_integration.entry_id
+    )
+    assert first is not None and other is not None
+    assert first.name == "Harmony Ultimate 1"
+    assert other.name == "Harmony Ultimate 2"

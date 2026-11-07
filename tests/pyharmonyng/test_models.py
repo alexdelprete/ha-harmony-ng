@@ -140,7 +140,10 @@ def test_rf_status() -> None:
         slot=1,
         active=True,
         remote_id="20141001120000-000002",
-        model="Harmony Ultimate",
+        model="ultimate",
+        model_name="Harmony Ultimate",
+        skin=100,
+        equad_id=16417,
         has_screen=True,
         battery_percent=87,
         charging=False,
@@ -158,7 +161,25 @@ def test_rf_status() -> None:
     assert empty.battery_percent is None
     assert empty.charging is None
     assert empty.in_sync is None
+    assert empty.model_name is None and empty.skin is None and empty.equad_id is None
+    assert slot.product_name == "Harmony Ultimate"
+    assert empty.product_name is None
     assert status.slot(3) is None
+
+
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    [
+        ({"model": "ultimate", "model_name": "Harmony Ultimate"}, "Harmony Ultimate"),
+        ({"model": "elite"}, None),
+        ({"model": "companion"}, "Harmony Companion"),
+        ({"model": "smart_control"}, "Harmony Smart Control"),
+        ({"model": "unknown", "model_name": ""}, None),
+    ],
+)
+def test_rf_slot_product_name(data: dict[str, str], expected: str | None) -> None:
+    """Only a reported model name or an EquadID-identified screenless model names a remote."""
+    assert RfSlot.from_json({"slot": 1, "active": True, **data}).product_name == expected
 
 
 def test_bt_status() -> None:

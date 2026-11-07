@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Remote devices are named and modelled after the product the Hub reports (for example
+  "Harmony Ultimate"), with the slot number only when two remotes share a product. The
+  device updates in place when the product becomes known; entity ids and names set by the
+  user stay as they are.
+- Firmware that does not report the product yet names every touchscreen remote `elite`.
+  That guess is no longer shown: such a remote is a "Harmony remote" without a model until
+  the firmware reports it. Companion and Smart Control remotes keep their names.
+
 ## [0.1.1] - 2026-11-06
 
 ### Fixed

@@ -46,8 +46,8 @@ async def test_presses(
     await press(hass, "button.living_room_hub_power_off")
     await press(hass, "button.living_room_hub_sync_remotes")
     await press(hass, "button.living_room_hub_cancel_activity")
-    await press(hass, "button.harmony_ultimate_1_wake")
-    await press(hass, "button.harmony_ultimate_1_sleep")
+    await press(hass, "button.harmony_ultimate_wake")
+    await press(hass, "button.harmony_ultimate_sleep")
     assert fake_transport.commands() == [
         ("power_off", ()),
         ("push_config", ()),
@@ -57,7 +57,7 @@ async def test_presses(
     ]
     fake_transport.errors["rf_wake"] = HarmonyNgApiError("already waking", code=202)
     with pytest.raises(HomeAssistantError, match="already waking"):
-        await press(hass, "button.harmony_ultimate_1_wake")
+        await press(hass, "button.harmony_ultimate_wake")
 
 
 async def test_wake_needs_capability(
@@ -69,5 +69,5 @@ async def test_wake_needs_capability(
     mock_config_entry.add_to_hass(hass)
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
-    assert hass.states.get("button.harmony_ultimate_1_wake").state == STATE_UNAVAILABLE
-    assert hass.states.get("button.harmony_ultimate_1_sleep").state != STATE_UNAVAILABLE
+    assert hass.states.get("button.harmony_ultimate_wake").state == STATE_UNAVAILABLE
+    assert hass.states.get("button.harmony_ultimate_sleep").state != STATE_UNAVAILABLE

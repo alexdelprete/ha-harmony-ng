@@ -55,16 +55,19 @@ async def test_uptime_and_firmware(
 async def test_second_remote_appears(
     hass: HomeAssistant, init_integration: MockConfigEntry, fake_transport: FakeTransport
 ) -> None:
-    assert hass.states.get("sensor.harmony_elite_2_battery") is None
+    assert hass.states.get("sensor.harmony_elite_battery") is None
     frame = load_frames("ws_rf_status")[0]
     frame["slots"][1] = {
         "slot": 2,
         "active": True,
         "remote_id": "20141001120000-000003",
-        "model": "Harmony Elite",
+        "model": "elite",
+        "model_name": "Harmony Elite",
+        "skin": 111,
+        "equad_id": 16417,
         "battery": {"percent": 55, "charging": True, "voltage_mv": 3700},
         "in_sync": False,
     }
     fake_transport.push(frame)
     await hass.async_block_till_done()
-    assert hass.states.get("sensor.harmony_elite_2_battery").state == "55"
+    assert hass.states.get("sensor.harmony_elite_battery").state == "55"

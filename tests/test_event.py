@@ -15,7 +15,7 @@ from homeassistant.helpers import entity_registry as er
 from .conftest import FakeTransport
 from .pyharmonyng.conftest import load_frames
 
-ENTITY = "event.harmony_ultimate_1_button"
+ENTITY = "event.harmony_ultimate_button"
 
 
 @pytest.fixture(autouse=True)
