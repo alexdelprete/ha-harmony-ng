@@ -81,6 +81,7 @@
       'hub': dict({
         'api_version': 2,
         'auth_enabled': False,
+        'boot_time': None,
         'capabilities': list([
           'events',
           'ir_raw',
@@ -157,6 +158,8 @@
           dict({
             'active': True,
             'battery_percent': 87,
+            'battery_reported_at': None,
+            'battery_restored': False,
             'charging': False,
             'config_version': 12,
             'equad_id': 16417,
@@ -175,6 +178,8 @@
           dict({
             'active': False,
             'battery_percent': None,
+            'battery_reported_at': None,
+            'battery_restored': False,
             'charging': None,
             'config_version': None,
             'equad_id': None,

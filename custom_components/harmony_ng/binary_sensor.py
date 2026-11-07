@@ -40,7 +40,6 @@ class HarmonyNgSlotBinaryDescription(BinarySensorEntityDescription):
 HUB_BINARY_SENSORS: tuple[HarmonyNgBinaryDescription, ...] = (
     HarmonyNgBinaryDescription(
         key="busy",
-        device_class=BinarySensorDeviceClass.RUNNING,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda state: state.activity.busy or state.activity.sending,
     ),

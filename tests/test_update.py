@@ -108,3 +108,67 @@ async def test_up_to_date_and_errors(
     assert state.state == "unknown"
     assert state.attributes["latest_version"] is None
     assert state.attributes["message"] == "Something newer"
+
+
+async def test_failed_check_retried(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    fake_transport: FakeTransport,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A check that fails, as right after the Hub boots, is retried soon, logged once."""
+    fake_transport.errors["update_check"] = HarmonyNgConnectionError("no reply")
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done(wait_background_tasks=True)
+
+    def checks() -> int:
+        return [c[0] for c in fake_transport.calls].count("update_check")
+
+    assert hass.states.get(ENTITY).state == "unknown"
+    assert checks() == 1
+
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(minutes=16))
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert checks() == 2
+    assert caplog.text.count("release check failed") == 1
+
+    del fake_transport.errors["update_check"]
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(minutes=32))
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert checks() == 3
+    assert hass.states.get(ENTITY).state == "on"
+    assert "release check works again" in caplog.text
+
+    # Once it works, no more retries until the daily check
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(hours=2))
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert checks() == 3
+
+
+async def test_check_after_reconnect(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    """The Hub may have restarted: check again when it comes back."""
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert [c[0] for c in fake_transport.calls].count("update_check") == 1
+    fake_transport.drop()
+    await hass.async_block_till_done()
+    assert hass.states.get(ENTITY).state == "unavailable"
+    fake_transport.restore()
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert [c[0] for c in fake_transport.calls].count("update_check") == 2
+    assert hass.states.get(ENTITY).state == "on"
+
+
+async def test_retry_cancelled_on_unload(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    fake_transport.errors["update_check"] = HarmonyNgConnectionError("no reply")
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    await hass.config_entries.async_unload(mock_config_entry.entry_id)
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(minutes=16))
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert [c[0] for c in fake_transport.calls].count("update_check") == 1

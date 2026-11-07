@@ -2,7 +2,10 @@
   "entity": {
     "binary_sensor": {
       "busy": {
-        "default": "mdi:progress-clock"
+        "default": "mdi:progress-clock",
+        "state": {
+          "off": "mdi:check-circle-outline"
+        }
       },
       "charging": {
         "default": "mdi:battery-charging"
@@ -85,6 +88,9 @@
       },
       "battery_voltage": {
         "default": "mdi:flash"
+      },
+      "battery_reported_at": {
+        "default": "mdi:battery-clock"
       }
     },
     "update": {

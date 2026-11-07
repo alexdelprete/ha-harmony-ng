@@ -120,7 +120,11 @@
   "entity": {
     "binary_sensor": {
       "busy": {
-        "name": "Busy"
+        "name": "Busy",
+        "state": {
+          "off": "Idle",
+          "on": "Busy"
+        }
       },
       "charging": {
         "name": "Charging"
@@ -208,6 +212,9 @@
       },
       "battery_voltage": {
         "name": "Battery voltage"
+      },
+      "battery_reported_at": {
+        "name": "Last battery report"
       }
     },
     "update": {
