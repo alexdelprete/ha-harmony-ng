@@ -525,6 +525,17 @@ async def test_update_and_capture(
     )
     assert request["action"] == "update_check"
     assert result.latest_version == "2.3.0"
+    # The check may run past the ordinary command timeout: the Hub answers when it ends
+    with patch("custom_components.harmony_ng.transport.mqtt.COMMAND_TIMEOUT", 0.01):
+        task = hass.async_create_task(transport.update_check())
+        await asyncio.sleep(0.05)
+        _, request = published(mqtt_mock)[-1]
+        async_fire_mqtt_message(
+            hass,
+            f"{BASE}/cmd/response",
+            json.dumps({"id": request["id"], "ok": True, "current_version": "2.3.0"}),
+        )
+        assert (await task).current_version == "2.3.0"
     for action, expected in (
         (transport.update_apply, {"action": "update_apply"}),
         (lambda: transport.ir_capture(True), {"action": "ir_capture", "enabled": True}),

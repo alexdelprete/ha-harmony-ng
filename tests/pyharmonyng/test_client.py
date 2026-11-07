@@ -209,3 +209,15 @@ async def test_update_and_capture(client: HarmonyNgClient, hub: FakeHub) -> None
         ("POST", "/api/update-apply", {}),
         ("POST", "/api/ir-capture", {"enabled": True}),
     ]
+
+
+async def test_update_check_outlives_the_request_timeout(
+    hub: FakeHub, session: aiohttp.ClientSession
+) -> None:
+    """The Hub's release check retries downloads; only the check may take that long."""
+    client = HarmonyNgClient(hub.host, session, port=hub.port, request_timeout=0.05)
+    hub.responses["/api/update-check"] = (200, load_json("update_check"))
+    hub.delay = 0.2
+    assert (await client.update_check()).update_available
+    with pytest.raises(HarmonyNgConnectionError):
+        await client.update_apply()

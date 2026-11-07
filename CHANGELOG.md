@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead of the Hub's 0 % placeholder.
 - MQTT transport: device and activity types were read from the message type field.
 - The link to the Hub's web UI is shown on the MQTT transport too.
+- The firmware release check gets up to two minutes to answer, on REST and MQTT alike. The
+  Hub retries its downloads, so a check on a slow network outlasted the 10 s request limit.
 - The client library is tested against payloads recorded from the firmware.
 
 ### Changed

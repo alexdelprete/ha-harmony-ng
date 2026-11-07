@@ -28,6 +28,9 @@ from .models import (
 
 DEFAULT_PORT: Final = 8089
 DEFAULT_TIMEOUT: Final = 10.0
+# A release check retries several downloads on the Hub; on a bad network it ends after
+# about 85 s, so it gets its own limit
+UPDATE_CHECK_TIMEOUT: Final = 120.0
 
 MAX_IR_TIMINGS: Final = 2048
 MIN_IR_TIMINGS: Final = 2
@@ -101,6 +104,7 @@ class HarmonyNgClient:
         *,
         json: Mapping[str, Any] | None = None,
         params: Mapping[str, str] | None = None,
+        time_limit: float | None = None,
     ) -> Any:
         headers = {"Authorization": f"Bearer {self._token}"} if self._token else None
         try:
@@ -110,7 +114,7 @@ class HarmonyNgClient:
                 json=json,
                 params=params,
                 headers=headers,
-                timeout=self._timeout,
+                timeout=aiohttp.ClientTimeout(total=time_limit) if time_limit else self._timeout,
             ) as response:
                 status = response.status
                 try:
@@ -141,9 +145,14 @@ class HarmonyNgClient:
         path: str,
         json: Mapping[str, Any] | None = None,
         params: Mapping[str, str] | None = None,
+        time_limit: float | None = None,
     ) -> Mapping[str, Any]:
         data = await self._request(
-            "POST", path, json=json if json is not None else {}, params=params
+            "POST",
+            path,
+            json=json if json is not None else {},
+            params=params,
+            time_limit=time_limit,
         )
         return data if isinstance(data, Mapping) else {}
 
@@ -284,7 +293,9 @@ class HarmonyNgClient:
 
     async def update_check(self) -> UpdateStatus:
         """Ask the Hub to look for a newer release."""
-        return UpdateStatus.from_json(await self._post("/api/update-check"))
+        return UpdateStatus.from_json(
+            await self._post("/api/update-check", time_limit=UPDATE_CHECK_TIMEOUT)
+        )
 
     async def update_apply(self) -> None:
         """Install the available release; the Hub restarts its services."""

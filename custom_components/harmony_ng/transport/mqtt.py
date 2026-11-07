@@ -16,6 +16,7 @@ from uuid import uuid4
 
 from custom_components.harmony_ng.pyharmonyng import (
     CAP_MQTT_V2,
+    UPDATE_CHECK_TIMEOUT,
     Activity,
     ActivityState,
     BtStatus,
@@ -277,7 +278,9 @@ class MqttTransport:
 
     async def update_check(self) -> UpdateStatus:
         """Ask the Hub for a release check; the reply carries the versions."""
-        return UpdateStatus.from_json(await self._command("update_check"))
+        return UpdateStatus.from_json(
+            await self._command("update_check", time_limit=UPDATE_CHECK_TIMEOUT)
+        )
 
     async def update_apply(self) -> None:
         """Install the available release."""
@@ -436,11 +439,17 @@ class MqttTransport:
             seq=seq,
         )
 
-    async def _command(self, action: str, **fields: Any) -> Mapping[str, Any]:
-        return await self._request(TOPIC_CMD, action, {"action": action, **fields})
+    async def _command(
+        self, action: str, *, time_limit: float | None = None, **fields: Any
+    ) -> Mapping[str, Any]:
+        return await self._request(TOPIC_CMD, action, {"action": action, **fields}, time_limit)
 
     async def _request(
-        self, topic: str, action: str, fields: Mapping[str, Any]
+        self,
+        topic: str,
+        action: str,
+        fields: Mapping[str, Any],
+        time_limit: float | None = None,
     ) -> Mapping[str, Any]:
         """Publish a request and wait for its acknowledgement on the response topic."""
         if not self.connected:
@@ -452,7 +461,7 @@ class MqttTransport:
             await mqtt.async_publish(
                 self._hass, f"{self._base}/{topic}", json.dumps({"id": request_id, **fields}), 1
             )
-            async with asyncio.timeout(COMMAND_TIMEOUT):
+            async with asyncio.timeout(COMMAND_TIMEOUT if time_limit is None else time_limit):
                 reply = await future
         except TimeoutError as err:
             raise HarmonyNgConnectionError(f"{action}: no reply from the Hub") from err

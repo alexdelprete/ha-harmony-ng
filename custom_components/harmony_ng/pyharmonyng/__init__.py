@@ -20,7 +20,7 @@ from .capabilities import (
     CAP_WS_KEEPALIVE,
     MIN_API_VERSION,
 )
-from .client import DEFAULT_PORT, DEFAULT_TIMEOUT, HarmonyNgClient
+from .client import DEFAULT_PORT, DEFAULT_TIMEOUT, UPDATE_CHECK_TIMEOUT, HarmonyNgClient
 from .events import (
     EVENT_TYPES,
     ActivityProgressEvent,
@@ -94,6 +94,7 @@ __all__ = [
     "IR_PORT_JACK2",
     "MIN_API_VERSION",
     "POWER_OFF_ACTIVITY_ID",
+    "UPDATE_CHECK_TIMEOUT",
     "Activity",
     "ActivityProgress",
     "ActivityProgressEvent",
