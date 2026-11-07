@@ -31,7 +31,10 @@ no longer speak the Logitech protocol.
 - One `remote` entity per Hub with the attributes and services of the core Harmony integration, so
   existing automations port with a change of entity id: `remote.turn_on` with an activity,
   `remote.turn_off`, `remote.send_command` with device, repeats, delay and hold.
-- Activity select, activity state, firmware and last-boot sensors, a busy indicator.
+- Activity select and one button per activity, activity state, firmware and last-boot sensors,
+  a busy indicator.
+- Each configured device is a child device of the Hub with its own `remote` entity and one button
+  per command it knows. The command buttons are disabled by default; enable the ones you use.
 - Per remote: battery, voltage, charging and configuration-sync sensors, wake and sleep buttons,
   and an `event` entity for every key press and release.
 - Infrared emitters for the front blaster and the two emitter jacks, usable by Home Assistant's

@@ -71,3 +71,14 @@ async def test_second_remote_appears(
     fake_transport.push(frame)
     await hass.async_block_till_done()
     assert hass.states.get("sensor.harmony_elite_battery").state == "55"
+
+
+async def test_battery_before_first_report(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    """The Hub's 0 % at 0 mV before a remote reports is shown as unknown, not as empty."""
+    frame = load_frames("ws_rf_status")[0]
+    frame["slots"][0]["battery"] = {"percent": 0, "charging": False, "voltage_mv": 0}
+    fake_transport.push(frame)
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.harmony_ultimate_battery").state == "unknown"

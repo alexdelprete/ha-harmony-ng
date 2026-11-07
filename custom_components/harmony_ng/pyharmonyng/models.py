@@ -263,7 +263,8 @@ class Activity:
         return cls(
             id=_str(data, "id"),
             name=_str(data, "name", "label"),
-            type=_str(data, "type"),
+            # The MQTT index names it activityType: "type" is the message type there
+            type=_str(data, "activityType", "type"),
             order=_int(data, "order"),
         )
 
@@ -298,7 +299,8 @@ class Device:
         return cls(
             id=_str(data, "id"),
             name=_str(data, "name", "label"),
-            type=_str(data, "type"),
+            # MQTT device chunks name it deviceType: "type" is the message type there
+            type=_str(data, "deviceType", "type"),
             manufacturer=_str(data, "manufacturer"),
             model=_str(data, "model"),
             control_port=_int(data, "controlPort", "control_port"),
@@ -373,6 +375,10 @@ class RfSlot:
         """Build from one item of `slots` in the RF status."""
         battery = _dict(data, "battery")
         link = _dict(data, "link")
+        # The Hub reports 0 % at 0 mV until the remote has sent a battery report:
+        # no reading yet, not an empty battery
+        if not _opt_int(battery, "percent") and not _opt_int(battery, "voltage_mv"):
+            battery = {}
         return cls(
             slot=_int(data, "slot"),
             active=_bool(data, "active"),
@@ -459,22 +465,31 @@ class BtStatus:
     def from_json(cls, data: JsonDict) -> Self:
         """Build from `GET /api/bt-status`, a `bt_status` event or a snapshot.
 
-        A host counts as connected when the stack reports a connection and the
-        host is the current target.
+        The stack lists its hosts under `hosts` with the address in `addr` and a
+        `connected` flag of their own. Without that flag, a host counts as
+        connected when the stack reports a connection and the host is the target.
         """
         connected = _bool(data, "connected")
         target = _opt_str(data, "target")
         target_key = target.casefold() if target else None
-        hosts = tuple(
-            BtHost(
-                bdaddr=_str(item, "bdaddr"),
-                name=_str(item, "name"),
-                connected=connected and _str(item, "bdaddr").casefold() == target_key,
+        hosts: list[BtHost] = []
+        for item in _list(data, "hosts", "devices"):
+            if not isinstance(item, Mapping):
+                continue
+            address = _str(item, "addr", "bdaddr")
+            host_connected = (
+                _bool(item, "connected")
+                if item.get("connected") is not None
+                else address.casefold() == target_key
             )
-            for item in _list(data, "devices", "hosts")
-            if isinstance(item, Mapping)
+            hosts.append(
+                BtHost(
+                    bdaddr=address, name=_str(item, "name"), connected=connected and host_connected
+                )
+            )
+        return cls(
+            running=_bool(data, "running"), connected=connected, target=target, hosts=tuple(hosts)
         )
-        return cls(running=_bool(data, "running"), connected=connected, target=target, hosts=hosts)
 
 
 @dataclass(frozen=True, slots=True)

@@ -32,6 +32,12 @@
       },
       "sleep": {
         "default": "mdi:sleep"
+      },
+      "start_activity": {
+        "default": "mdi:play-circle-outline"
+      },
+      "device_command": {
+        "default": "mdi:remote"
       }
     },
     "event": {

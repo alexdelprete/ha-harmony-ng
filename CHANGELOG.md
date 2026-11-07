@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- One button per activity on the Hub, which starts it.
+- One button per command on each configured device, disabled by default.
+
+### Fixed
+
+- Bluetooth hosts: the address was read from a key the Hub does not send, so all hosts
+  shared an empty address and only one connectivity sensor was created. Each host now gets
+  its own sensor; the leftover sensor with the empty address is removed.
+- Remote battery, voltage and charging show unknown until the remote's first report,
+  instead of the Hub's 0 % placeholder.
+- MQTT transport: device and activity types were read from the message type field.
+- The link to the Hub's web UI is shown on the MQTT transport too.
+- The firmware release check gets up to two minutes to answer, on REST and MQTT alike. The
+  Hub retries its downloads, so a check on a slow network outlasted the 10 s request limit.
+- The client library is tested against payloads recorded from the firmware.
+
 ### Changed
 
 - Remote devices are named and modelled after the product the Hub reports (for example

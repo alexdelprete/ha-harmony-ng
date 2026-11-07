@@ -1,0 +1,213 @@
+{
+  "harmony/hub/activity_state": {
+    "type": "activity_state",
+    "seq": 1,
+    "ts": 1793959909,
+    "activity": "-1",
+    "state": 0,
+    "stateName": "idle",
+    "busy": false,
+    "sending": false
+  },
+  "harmony/hub/bt": {
+    "type": "bt_status",
+    "seq": 2,
+    "ts": 1793959910,
+    "ok": true,
+    "running": true,
+    "connected": true,
+    "target": "AA:BB:CC:DD:EE:FF",
+    "pairing": false,
+    "last_button": "",
+    "last_seen": 0,
+    "updated": 0,
+    "hosts": [
+      {
+        "addr": "AA:BB:CC:DD:EE:FF",
+        "name": "Media Player",
+        "connected": true,
+        "paired": true,
+        "pairing": false
+      }
+    ]
+  },
+  "harmony/hub/config": {
+    "type": "config",
+    "files": {
+      "devices": 1793959909,
+      "activities": 1793959909,
+      "settings": 1793959909,
+      "remote_map": 1793959909
+    },
+    "inventory_version": "504af5ca",
+    "ts": 1793959909
+  },
+  "harmony/hub/hub": {
+    "type": "hub",
+    "hub_id": "20140101120000-000001",
+    "hub_name": "Test Hub",
+    "version": "2.2.0",
+    "api_version": 2,
+    "capabilities": [
+      "events",
+      "snapshot",
+      "ws_auth",
+      "ws_keepalive",
+      "ir_raw",
+      "mdns",
+      "mqtt_v2",
+      "rf_wake"
+    ],
+    "legacy_enabled": false,
+    "mdns_enabled": true,
+    "auth_enabled": false,
+    "uptime_sec": 10402,
+    "ts": 1793959909
+  },
+  "harmony/hub/inventory/1": {
+    "type": "inventory_device",
+    "id": "1",
+    "name": "Living Room TV",
+    "deviceType": "Television",
+    "manufacturer": "Example",
+    "model": "TV-1000",
+    "controlPort": 7,
+    "commands": [
+      "PowerOn",
+      "PowerOff",
+      "InputHdmi1",
+      "VolumeUp",
+      "VolumeDown"
+    ]
+  },
+  "harmony/hub/inventory/2": {
+    "type": "inventory_device",
+    "id": "2",
+    "name": "Media Player",
+    "deviceType": "MediaPlayer",
+    "manufacturer": "Example",
+    "model": "Box-200",
+    "controlPort": 7,
+    "commands": [
+      "PowerToggle",
+      "Home",
+      "Select"
+    ]
+  },
+  "harmony/hub/inventory/index": {
+    "type": "inventory_index",
+    "inventory_version": "504af5ca",
+    "devices": [
+      {
+        "id": "1",
+        "name": "Living Room TV",
+        "deviceType": "Television",
+        "manufacturer": "Example",
+        "model": "TV-1000"
+      },
+      {
+        "id": "2",
+        "name": "Media Player",
+        "deviceType": "MediaPlayer",
+        "manufacturer": "Example",
+        "model": "Box-200"
+      }
+    ],
+    "activities": [
+      {
+        "id": "10",
+        "name": "Watch TV",
+        "activityType": "WatchTV",
+        "order": 1
+      },
+      {
+        "id": "11",
+        "name": "Media Player",
+        "activityType": "Custom",
+        "order": 2
+      }
+    ]
+  },
+  "harmony/hub/rf": {
+    "type": "rf_status",
+    "seq": 3,
+    "ts": 1793959911,
+    "running": true,
+    "ok": true,
+    "fw_version": "v72.00",
+    "paired": true,
+    "rf_address": "A1B2C3D4",
+    "hub_rf_address": "A1B2C3D4",
+    "pairing_active": false,
+    "sync_pending": false,
+    "sync_pending_slot": 0,
+    "sync_pending_diff": "Hub configuration changed. Push settings to sync.",
+    "hub_config_version": 7,
+    "ota": {
+      "in_progress": false,
+      "slot": 0,
+      "status": 0,
+      "sent_bytes": 0,
+      "total_bytes": 0,
+      "sent_chunks": 0,
+      "total_chunks": 0,
+      "error": ""
+    },
+    "slots": [
+      {
+        "slot": 1,
+        "name": "Harmony Remote (Slot 1)",
+        "model": "elite",
+        "has_screen": true,
+        "supports_ota": true,
+        "active": true,
+        "in_sync": true,
+        "address": "E5F60718",
+        "rf_address": "E5F60718",
+        "sw_version": "2.2.0",
+        "remote_id": "20141001120000-000002",
+        "config_version": 7,
+        "battery": {
+          "percent": 87,
+          "charging": false,
+          "voltage_mv": 3980
+        },
+        "link": {
+          "frames_rx": 120,
+          "acked_sent": 12,
+          "acked_ok": 12,
+          "retries": 0,
+          "naks": 0,
+          "last_seen_s": 2
+        }
+      },
+      {
+        "slot": 2,
+        "name": "Harmony Elite (Slot 2)",
+        "model": "unknown",
+        "has_screen": true,
+        "supports_ota": true,
+        "active": false,
+        "in_sync": false,
+        "address": "None",
+        "rf_address": "None",
+        "sw_version": "unknown",
+        "config_version": 0,
+        "battery": {
+          "percent": 0,
+          "charging": false,
+          "voltage_mv": 0
+        },
+        "link": {
+          "frames_rx": 0,
+          "acked_sent": 0,
+          "acked_ok": 0,
+          "retries": 0,
+          "naks": 0,
+          "last_seen_s": -1
+        }
+      }
+    ]
+  },
+  "harmony/hub/status": "online"
+}

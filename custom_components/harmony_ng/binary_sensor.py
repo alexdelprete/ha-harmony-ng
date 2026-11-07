@@ -6,15 +6,18 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from homeassistant.components.binary_sensor import (
+    DOMAIN as BINARY_SENSOR_DOMAIN,
     BinarySensorDeviceClass,
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import HarmonyNgConfigEntry
+from .const import DOMAIN
 from .coordinator import HarmonyNgCoordinator, HubState
 from .entity import HarmonyNgEntity, async_add_dynamic_entities
 from .pyharmonyng import BtHost, RfSlot
@@ -72,6 +75,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Hub sensors, one set per paired remote and one per Bluetooth host."""
     coordinator = entry.runtime_data.coordinator
+    _async_remove_addressless_host(hass, coordinator.hub_id)
     async_add_entities(HarmonyNgHubBinarySensor(coordinator, d) for d in HUB_BINARY_SENSORS)
     entry.async_on_unload(
         async_add_dynamic_entities(
@@ -87,7 +91,7 @@ async def async_setup_entry(
         async_add_dynamic_entities(
             coordinator,
             async_add_entities,
-            lambda state: [host.bdaddr for host in state.bt.hosts],
+            lambda state: [host.bdaddr for host in state.bt.hosts if host.bdaddr],
             lambda coord, bdaddr: [HarmonyNgBtHostSensor(coord, bdaddr)],
         )
     )
@@ -162,3 +166,15 @@ class HarmonyNgBtHostSensor(HarmonyNgEntity, BinarySensorEntity):
 
 def _address_key(bdaddr: str) -> str:
     return bdaddr.replace(":", "").lower()
+
+
+def _async_remove_addressless_host(hass: HomeAssistant, hub_id: str) -> None:
+    """Remove the host sensor 0.1.1 and earlier created for hosts without an address.
+
+    Those releases read the address from a key the Hub does not send, so every
+    host got the same empty address and a single sensor stood for all of them.
+    """
+    registry = er.async_get(hass)
+    stale = registry.async_get_entity_id(BINARY_SENSOR_DOMAIN, DOMAIN, f"{hub_id}_bt_host_")
+    if stale is not None:
+        registry.async_remove(stale)

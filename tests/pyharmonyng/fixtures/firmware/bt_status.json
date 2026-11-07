@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "running": true,
+  "connected": true,
+  "target": "AA:BB:CC:DD:EE:FF",
+  "pairing": false,
+  "last_button": "",
+  "last_seen": 0,
+  "updated": 0,
+  "hosts": [
+    {
+      "addr": "AA:BB:CC:DD:EE:FF",
+      "name": "Media Player",
+      "connected": true,
+      "paired": true,
+      "pairing": false
+    }
+  ]
+}

@@ -48,7 +48,11 @@ VERSION = "abc12345"
 
 
 def retained_payloads(*, mqtt_v2: bool = True, online: bool = True) -> dict[str, str]:
-    """Return topic to payload for a Hub running milestone 3 firmware."""
+    """Return topic to payload for a Hub running milestone 3 firmware.
+
+    Shaped like the firmware's own recording: "type" is the message type on every
+    topic, so devices carry theirs as deviceType and activities as activityType.
+    """
     snapshot = load_json("snapshot")
     hub = {**snapshot["hub"], "type": "hub", "seq": 42, "ts": 1}
     if mqtt_v2:
@@ -58,9 +62,16 @@ def retained_payloads(*, mqtt_v2: bool = True, online: bool = True) -> dict[str,
         "type": "inventory_index",
         "inventory_version": VERSION,
         "devices": [
-            {k: d[k] for k in ("id", "name", "type", "manufacturer", "model")} for d in inventory
+            {
+                **{k: d[k] for k in ("id", "name", "manufacturer", "model")},
+                "deviceType": d["type"],
+            }
+            for d in inventory
         ],
-        "activities": load_json("activities")["activities"],
+        "activities": [
+            {"id": a["id"], "name": a["name"], "activityType": a["type"], "order": a["order"]}
+            for a in load_json("activities")["activities"]
+        ],
     }
     payloads = {
         f"{BASE}/status": "online" if online else "offline",
@@ -80,10 +91,8 @@ def retained_payloads(*, mqtt_v2: bool = True, online: bool = True) -> dict[str,
             {
                 "type": "inventory_device",
                 "inventory_version": VERSION,
-                **{
-                    k: device[k]
-                    for k in ("id", "name", "type", "manufacturer", "model", "controlPort")
-                },
+                **{k: device[k] for k in ("id", "name", "manufacturer", "model", "controlPort")},
+                "deviceType": device["type"],
                 "commands": [c["name"] for c in device["commands"]],
             }
         )
@@ -188,7 +197,8 @@ async def test_setup_and_state(hass: HomeAssistant, mqtt_entry: MockConfigEntry)
     coordinator = mqtt_entry.runtime_data.coordinator
     assert coordinator.transport_name == "mqtt"
     assert coordinator.transport.connected
-    assert coordinator.configuration_url is None
+    # The host is known on the MQTT transport too, so the web UI link is offered
+    assert coordinator.configuration_url == f"http://{mqtt_entry.data['host']}:8089"
     assert hass.states.get("remote.living_room_hub").state == "off"
     assert hass.states.get("remote.living_room_hub").attributes["activity_list"] == [
         "Watch TV",
@@ -202,6 +212,12 @@ async def test_setup_and_state(hass: HomeAssistant, mqtt_entry: MockConfigEntry)
         "Apple TV",
     ]
     assert coordinator.data.inventory.device("70321456").commands[0] == "PowerToggle"
+    assert [d.type for d in coordinator.data.inventory.devices] == [
+        "Television",
+        "Audio",
+        "Streaming Media Player",
+    ]
+    assert {a.type for a in coordinator.data.activities} == {"Custom"}
 
     for frame in load_frames("ws_activity_switch")[:5]:
         async_fire_mqtt_message(
@@ -509,6 +525,17 @@ async def test_update_and_capture(
     )
     assert request["action"] == "update_check"
     assert result.latest_version == "2.3.0"
+    # The check may run past the ordinary command timeout: the Hub answers when it ends
+    with patch("custom_components.harmony_ng.transport.mqtt.COMMAND_TIMEOUT", 0.01):
+        task = hass.async_create_task(transport.update_check())
+        await asyncio.sleep(0.05)
+        _, request = published(mqtt_mock)[-1]
+        async_fire_mqtt_message(
+            hass,
+            f"{BASE}/cmd/response",
+            json.dumps({"id": request["id"], "ok": True, "current_version": "2.3.0"}),
+        )
+        assert (await task).current_version == "2.3.0"
     for action, expected in (
         (transport.update_apply, {"action": "update_apply"}),
         (lambda: transport.ir_capture(True), {"action": "ir_capture", "enabled": True}),

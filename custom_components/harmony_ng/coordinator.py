@@ -236,9 +236,7 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
 
     @property
     def configuration_url(self) -> str | None:
-        """Return the Hub's web UI address for the API transport."""
-        if self.transport_name != TRANSPORT_API:
-            return None
+        """Return the Hub's web UI address; the host is known on every transport."""
         host = self.config_entry.data.get("host")
         port = self.config_entry.data.get("port", 8089)
         return f"http://{host}:{port}" if host else None
