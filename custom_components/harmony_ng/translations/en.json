@@ -212,6 +212,9 @@
       },
       "battery_voltage": {
         "name": "Battery voltage"
+      },
+      "battery_reported_at": {
+        "name": "Last battery report"
       }
     },
     "update": {

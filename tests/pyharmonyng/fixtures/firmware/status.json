@@ -18,6 +18,7 @@
   ],
   "legacy_enabled": false,
   "mdns_enabled": true,
+  "boot_time": 1793936234,
   "activity": "-1",
   "state": 0,
   "busy": false,

@@ -88,6 +88,9 @@
       },
       "battery_voltage": {
         "default": "mdi:flash"
+      },
+      "battery_reported_at": {
+        "default": "mdi:battery-clock"
       }
     },
     "update": {

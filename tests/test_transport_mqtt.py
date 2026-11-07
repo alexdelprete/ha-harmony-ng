@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import AsyncGenerator, Callable, Coroutine
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 import json
 from typing import Any
 from unittest.mock import patch
@@ -494,6 +494,23 @@ async def test_odd_messages(hass: HomeAssistant, mqtt_entry: MockConfigEntry) ->
     assert transport.status_version() == "9.9.9"
     assert transport.connected
     assert hass.states.get("remote.living_room_hub").state == "off"
+
+
+@pytest.mark.usefixtures("mqtt_mock")
+async def test_hub_republished(hass: HomeAssistant, mqtt_entry: MockConfigEntry) -> None:
+    """The Hub republishes its object once its clock is set; the state picks it up."""
+    hub = json.loads(retained_payloads()[f"{BASE}/hub"])
+    hub["boot_time"] = None
+    payloads = retained_payloads()
+    payloads[f"{BASE}/hub"] = json.dumps(hub)
+    await setup_mqtt(hass, mqtt_entry, payloads)
+    coordinator = mqtt_entry.runtime_data.coordinator
+    estimated = coordinator.data.booted_at
+    assert estimated is not None
+    async_fire_mqtt_message(hass, f"{BASE}/hub", json.dumps({**hub, "boot_time": 1793936234}))
+    await hass.async_block_till_done()
+    assert coordinator.data.booted_at == datetime.fromtimestamp(1793936234, tz=UTC)
+    assert coordinator.data.hub.boot_time == coordinator.data.booted_at
 
 
 async def test_status_before_ready(hass: HomeAssistant) -> None:

@@ -7,8 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Per remote, a "Last battery report" sensor: when the remote last reported its battery, from
+  firmware that sends `reported_at`. A battery block the Hub never received (`reported_at`
+  null) is unknown, whatever placeholder numbers it carries.
+- Last boot uses the Hub's `boot_time` when the firmware sends it. Over MQTT, the Hub status
+  the Hub republishes (once its clock is set, on a configuration change) now reaches the
+  integration's state instead of waiting for the next reconnect.
+
 ### Fixed
 
+- Last boot crept forward: it was the Hub's uptime subtracted from the time of the latest
+  event, and the uptime only changes with a snapshot. It is now computed once per snapshot
+  when the firmware has no `boot_time`.
 - Bluetooth hosts always showed disconnected and the stack not running. The Hub forwards the
   Bluetooth daemon's status file, which has a connected flag per host but no top-level
   `connected` or `running`; the parser required the top-level flag. The connected host is now

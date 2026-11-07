@@ -1,12 +1,16 @@
 """The client library against payloads recorded from the firmware.
 
 The files under fixtures/firmware are copied unchanged from the harmony-ng
-firmware's tests/fixtures/ha (commit f2f5290), which records what its daemons
-send. The other fixtures are shaped for the integration tests; these keep the
-parsing honest about key names the firmware really uses.
+firmware's tests/fixtures/ha, which the firmware builds with its real writers
+(the RF status builder, hub_btstack's status file): rf_status.json from branch
+fix/rf-battery-restart (e118d2c), the others from fix/hub-boot-time (b9e2232).
+The other fixtures are shaped for the integration tests; these keep the parsing
+honest about the key names the firmware really uses.
 """
 
 from __future__ import annotations
+
+from datetime import UTC, datetime
 
 from custom_components.harmony_ng.pyharmonyng import (
     Activity,
@@ -21,19 +25,29 @@ from custom_components.harmony_ng.pyharmonyng import (
 from .conftest import load_json
 
 FIRMWARE = "firmware/"
+HOSTS = [
+    ("AA:BB:CC:DD:EE:01", "Television", False),
+    ("AA:BB:CC:DD:EE:FF", "Media Player", True),
+]
+
+
+def _hosts(status: BtStatus) -> list[tuple[str, str, bool]]:
+    return [(h.bdaddr, h.name, h.connected) for h in status.hosts]
 
 
 def test_status() -> None:
     status = HubStatus.from_json(load_json(FIRMWARE + "status"))
     assert status.hub_id == "20140101120000-000001"
     assert status.api_version >= 2
+    assert status.boot_time == datetime.fromtimestamp(1793936234, tz=UTC)
 
 
-def test_bt_hosts_use_addr() -> None:
+def test_bt_status() -> None:
+    """hub_btstack's file plus the fields hub_daemon adds; target is the physical remote."""
     status = BtStatus.from_json(load_json(FIRMWARE + "bt_status"))
-    assert [(h.bdaddr, h.name, h.connected) for h in status.hosts] == [
-        ("AA:BB:CC:DD:EE:FF", "Media Player", True)
-    ]
+    assert status.running and status.connected
+    assert status.target == "AA:BB:CC:DD:EE:FF"
+    assert _hosts(status) == HOSTS
 
 
 def test_rf_slots() -> None:
@@ -41,17 +55,21 @@ def test_rf_slots() -> None:
     paired = status.slot(1)
     assert paired is not None
     assert paired.active
-    assert paired.model == "elite"
-    # This firmware does not report the product yet, so the model is not shown
-    assert paired.product_name is None
-    assert paired.battery_percent is not None
+    assert paired.model == "ultimate"
+    assert paired.product_name == "Harmony Ultimate"
+    assert (paired.skin, paired.equad_id) == (100, 16417)
+    assert paired.battery_percent == 87
+    assert paired.battery_reported_at == datetime.fromtimestamp(1794000000, tz=UTC)
+    assert not paired.battery_restored
     empty = status.slot(2)
     assert empty is not None
     assert not empty.active
-    # 0 % at 0 mV is the Hub's placeholder before a report, not a reading
+    assert empty.product_name is None
+    # 0 % at 0 mV with a null reported_at: no report yet, not a reading
     assert empty.battery_percent is None
     assert empty.voltage_mv is None
     assert empty.charging is None
+    assert empty.battery_reported_at is None
 
 
 def test_inventory_and_activities() -> None:
@@ -66,7 +84,7 @@ def test_inventory_and_activities() -> None:
 def test_snapshot() -> None:
     snapshot = Snapshot.from_json(load_json(FIRMWARE + "snapshot"))
     assert snapshot.hub.hub_id == "20140101120000-000001"
-    assert [h.bdaddr for h in snapshot.bt_status.hosts] == ["AA:BB:CC:DD:EE:FF"]
+    assert _hosts(snapshot.bt_status) == HOSTS
     assert snapshot.rf_status.slot(1) is not None
 
 
@@ -81,7 +99,6 @@ def test_mqtt_retained() -> None:
     devices = [Device.from_json(chunk) for chunk in chunks]
     assert sorted(d.type for d in devices) == ["MediaPlayer", "Television"]
     assert all(d.commands for d in devices)
-    bt = BtStatus.from_json(retained["harmony/hub/bt"])
-    assert [h.bdaddr for h in bt.hosts] == ["AA:BB:CC:DD:EE:FF"]
+    assert _hosts(BtStatus.from_json(retained["harmony/hub/bt"])) == HOSTS
     rf = RfStatus.from_json(retained["harmony/hub/rf"])
     assert rf.slot(1) is not None

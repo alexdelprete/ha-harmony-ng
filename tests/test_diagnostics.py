@@ -17,4 +17,6 @@ async def test_diagnostics(
     assert result["entry"]["data"]["host"] == "**REDACTED**"
     assert result["state"]["bt"]["target"] == "**REDACTED**"
     assert result["state"]["bt"]["hosts"][0]["bdaddr"] == "**REDACTED**"
-    assert result == snapshot(exclude=props("created_at", "modified_at", "entry_id", "received_at"))
+    assert result == snapshot(
+        exclude=props("created_at", "modified_at", "entry_id", "received_at", "booted_at")
+    )

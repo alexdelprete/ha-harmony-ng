@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 
 from homeassistant.config_entries import ConfigEntry
@@ -91,6 +91,7 @@ class HubState:
     last_button: RemoteButton | None
     connected: bool
     received_at: datetime
+    booted_at: datetime | None = None
 
     def activity_name(self, activity_id: str) -> str | None:
         """Return the name of an activity, or None for power off and unknown ids."""
@@ -374,6 +375,12 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         self, snapshot: Snapshot, activities: tuple[Activity, ...], inventory: Inventory
     ) -> HubState:
         self._track_last_activity(snapshot.activity_state)
+        now = dt_util.utcnow()
+        booted_at = snapshot.hub.boot_time
+        if booted_at is None and snapshot.hub.uptime_sec is not None:
+            # Firmware without boot_time, or its clock is not set yet: once, from the
+            # uptime in this snapshot, never again from a later event's time
+            booted_at = now - timedelta(seconds=snapshot.hub.uptime_sec)
         return HubState(
             hub=snapshot.hub,
             activity=snapshot.activity_state,
@@ -385,7 +392,8 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
             last_activity_id=self._last_activity_id,
             last_button=None,
             connected=True,
-            received_at=dt_util.utcnow(),
+            received_at=now,
+            booted_at=booted_at,
         )
 
     def _apply_event(self, state: HubState, event: HubEvent) -> HubState:

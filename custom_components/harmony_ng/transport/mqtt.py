@@ -343,6 +343,11 @@ class MqttTransport:
                     self._status = HubStatus.from_json(payload)
                 except HarmonyNgUnsupportedError:
                     _LOGGER.debug("Ignoring a hub topic without identity")
+                else:
+                    # The Hub republishes it when its clock gets set (boot_time), on a
+                    # configuration change and on Home Assistant's birth message
+                    if self._hub_online and self._on_snapshot is not None:
+                        self._on_snapshot(self._build_snapshot())
         elif self._ready:
             self._deliver(payload)
         self._retained_events[topic].set()

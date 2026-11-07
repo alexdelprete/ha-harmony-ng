@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorEntityDescription
 from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfElectricPotential
@@ -29,13 +29,7 @@ class HarmonyNgSensorDescription(SensorEntityDescription):
 class HarmonyNgSlotSensorDescription(SensorEntityDescription):
     """A remote sensor read from its RF slot."""
 
-    value_fn: Callable[[RfSlot], StateType]
-
-
-def _uptime(state: HubState) -> datetime | None:
-    if state.hub.uptime_sec is None:
-        return None
-    return state.received_at - timedelta(seconds=state.hub.uptime_sec)
+    value_fn: Callable[[RfSlot], StateType | datetime]
 
 
 HUB_SENSORS: tuple[HarmonyNgSensorDescription, ...] = (
@@ -56,7 +50,8 @@ HUB_SENSORS: tuple[HarmonyNgSensorDescription, ...] = (
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
-        value_fn=_uptime,
+        # The Hub's boot_time, or once per snapshot from its uptime on older firmware
+        value_fn=lambda state: state.booted_at,
     ),
 )
 
@@ -79,6 +74,12 @@ SLOT_SENSORS: tuple[HarmonyNgSlotSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         value_fn=lambda slot: slot.voltage_mv,
+    ),
+    HarmonyNgSlotSensorDescription(
+        key="battery_reported_at",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda slot: slot.battery_reported_at,
     ),
 )
 
@@ -127,7 +128,7 @@ class HarmonyNgSlotSensor(HarmonyNgEntity, SensorEntity):
         super().__init__(coordinator, description, slot=slot)
 
     @property
-    def native_value(self) -> StateType:
+    def native_value(self) -> StateType | datetime:
         """Return the value read from the slot."""
         rf_slot = self.state_data.slot(self._slot or 0)
         return self.entity_description.value_fn(rf_slot) if rf_slot else None

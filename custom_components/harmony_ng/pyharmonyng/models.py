@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, Self
 
@@ -105,6 +106,12 @@ def _opt_int(data: JsonDict, *keys: str) -> int | None:
     return None
 
 
+def _opt_epoch(data: JsonDict, key: str) -> datetime | None:
+    """A Unix time in seconds; None when missing, null or not positive."""
+    value = _opt_int(data, key)
+    return datetime.fromtimestamp(value, tz=UTC) if value and value > 0 else None
+
+
 def _bool(data: JsonDict, *keys: str, default: bool = False) -> bool:
     for key in keys:
         value = data.get(key)
@@ -162,6 +169,7 @@ class HubStatus:
     mdns_enabled: bool
     firmware: str
     mqtt: MqttInfo | None
+    boot_time: datetime | None = None
 
     @classmethod
     def from_json(cls, data: JsonDict) -> Self:
@@ -194,6 +202,7 @@ class HubStatus:
             mdns_enabled=_bool(data, "mdns_enabled"),
             firmware=_str(data, "firmware"),
             mqtt=MqttInfo.from_json(mqtt) if isinstance(mqtt, Mapping) else None,
+            boot_time=_opt_epoch(data, "boot_time"),
         )
 
     def has(self, capability: str) -> bool:
@@ -369,6 +378,8 @@ class RfSlot:
     in_sync: bool | None
     sw_version: str | None
     last_seen_s: int | None
+    battery_reported_at: datetime | None = None
+    battery_restored: bool = False
 
     @classmethod
     def from_json(cls, data: JsonDict) -> Self:
@@ -376,8 +387,12 @@ class RfSlot:
         battery = _dict(data, "battery")
         link = _dict(data, "link")
         # The Hub reports 0 % at 0 mV until the remote has sent a battery report:
-        # no reading yet, not an empty battery
-        if not _opt_int(battery, "percent") and not _opt_int(battery, "voltage_mv"):
+        # no reading yet, not an empty battery. Newer firmware says so with a null
+        # reported_at.
+        never_reported = "reported_at" in battery and battery["reported_at"] is None
+        if never_reported or (
+            not _opt_int(battery, "percent") and not _opt_int(battery, "voltage_mv")
+        ):
             battery = {}
         return cls(
             slot=_int(data, "slot"),
@@ -396,6 +411,8 @@ class RfSlot:
             in_sync=bool(data["in_sync"]) if data.get("in_sync") is not None else None,
             sw_version=_opt_str(data, "sw_version", "version", "firmware"),
             last_seen_s=_opt_int(link, "last_seen_s"),
+            battery_reported_at=_opt_epoch(battery, "reported_at"),
+            battery_restored=_bool(battery, "restored"),
         )
 
     @property
