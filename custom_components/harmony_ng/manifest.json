@@ -20,7 +20,7 @@
   "issue_tracker": "https://github.com/alexdelprete/ha-harmony-ng/issues",
   "quality_scale": "platinum",
   "requirements": [],
-  "version": "0.1.1",
+  "version": "0.1.2",
   "zeroconf": [
     {
       "type": "_harmony-ng._tcp.local."
