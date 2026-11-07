@@ -14,7 +14,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
 from .conftest import HUB_ID, FakeTransport
-from .pyharmonyng.conftest import load_frames
+from .pyharmonyng.conftest import load_frames, load_json
 
 BUSY = "binary_sensor.living_room_hub_busy"
 SYNC = "binary_sensor.harmony_ultimate_configuration_out_of_sync"
@@ -94,3 +94,13 @@ async def test_addressless_host_sensor_removed(
     await hass.async_block_till_done()
     assert entity_registry.async_get(stale.entity_id) is None
     assert hass.states.get(APPLE_TV).state == "on"
+
+
+async def test_bluetooth_hosts_from_daemon_file(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    """The Hub forwards the daemon's file, which has a flag per host and none at the top."""
+    fake_transport.push({"type": "bt_status", "seq": 99, **load_json("bt_status_daemon")})
+    await hass.async_block_till_done()
+    assert hass.states.get(APPLE_TV).state == "off"
+    assert hass.states.get(SHIELD).state == "on"

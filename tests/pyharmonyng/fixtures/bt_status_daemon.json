@@ -1,0 +1,22 @@
+{
+  "backend": "btstack",
+  "pid": 209,
+  "state": "listening",
+  "target": "AA:BB:CC:00:00:01",
+  "last_button": "",
+  "last_seen": 0,
+  "remote": {
+    "connected": true,
+    "addr": "AA:BB:CC:00:00:01"
+  },
+  "host": {
+    "connected": true,
+    "addr": "11:22:33:44:55:66",
+    "name": "Shield",
+    "pairing": false
+  },
+  "hosts": [
+    {"addr": "AA:BB:CC:DD:EE:FF", "name": "Apple TV", "connected": false, "paired": true, "cid": 0},
+    {"addr": "11:22:33:44:55:66", "name": "Shield", "connected": true, "paired": true, "cid": 65}
+  ]
+}
