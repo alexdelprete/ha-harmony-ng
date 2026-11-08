@@ -271,3 +271,72 @@ async def test_two_remotes_of_one_product(
     assert first is not None and other is not None
     assert first.name == "Harmony Ultimate 1"
     assert other.name == "Harmony Ultimate 2"
+
+
+def unknown_model(data: dict, remote_id: str = REMOTE_ID) -> dict:
+    """The first slot as the Hub reports it after its RF service restarted."""
+    slot = data["slots"][0]
+    slot.update(remote_id=remote_id, model="unknown", model_name=None, skin=None, equad_id=None)
+    return data
+
+
+async def test_remote_product_kept_while_unknown(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    """A Hub that briefly forgets the remote's model does not clear it."""
+    coordinator = init_integration.runtime_data.coordinator
+    device_registry = dr.async_get(hass)
+
+    def model() -> str | None:
+        device = device_registry.async_get_device_by_identifier(
+            (DOMAIN, REMOTE_ID), init_integration.entry_id
+        )
+        assert device is not None
+        return device.model
+
+    fake_transport.push(unknown_model(load_frames("ws_rf_status")[0]))
+    await hass.async_block_till_done()
+    assert model() == "Harmony Ultimate"
+    slot = coordinator.data.slot(1)
+    assert slot is not None
+    assert (slot.model, slot.skin, slot.battery_percent) == ("ultimate", 100, 87)
+
+    # Also through a new snapshot, as after a reconnect
+    data = load_json("snapshot")
+    unknown_model(data["rf_status"])
+    fake_transport.restore(Snapshot.from_json(data))
+    await hass.async_block_till_done()
+    assert model() == "Harmony Ultimate"
+    assert coordinator.data.slot(1).product_name == "Harmony Ultimate"
+
+
+async def test_other_remote_does_not_inherit_product(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    coordinator = init_integration.runtime_data.coordinator
+    fake_transport.push(
+        unknown_model(load_frames("ws_rf_status")[0], remote_id="20141001120000-000009")
+    )
+    await hass.async_block_till_done()
+    assert coordinator.data.slot(1).product_name is None
+
+
+async def test_remote_product_from_registry_at_setup(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    """Set up while the Hub does not know the product: the registry's model stays."""
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    await hass.config_entries.async_unload(mock_config_entry.entry_id)
+
+    data = load_json("snapshot")
+    unknown_model(data["rf_status"])
+    fake_transport.snapshot = Snapshot.from_json(data)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, REMOTE_ID), mock_config_entry.entry_id
+    )
+    assert device is not None
+    assert (device.model, device.name) == ("Harmony Ultimate", "Harmony Ultimate")
