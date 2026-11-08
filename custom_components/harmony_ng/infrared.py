@@ -26,7 +26,7 @@ from .const import IR_EMITTERS
 from .coordinator import HarmonyNgCoordinator
 from .entity import HarmonyNgEntity
 from .helpers import hub_call
-from .pyharmonyng import CAP_IR_CAPTURE, CAP_IR_RAW, HarmonyNgError, IrSignal
+from .pyharmonyng import CAP_IR_CAPTURE, CAP_IR_RAW, HarmonyNgError, HubStatus, IrSignal
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -87,7 +87,9 @@ class HarmonyNgInfraredReceiver(HarmonyNgEntity, InfraredReceiverEntity):
     """The Hub's infrared capture, on while this entity is enabled.
 
     Disabled by default: capturing shares the infrared hardware with sending, so
-    only users who want to learn codes turn it on.
+    only users who want to learn codes turn it on. The Hub starts every boot with
+    capture off, so it is turned on again whenever the Hub comes back or reports it
+    off.
     """
 
     entity_description: InfraredReceiverEntityDescription
@@ -95,6 +97,8 @@ class HarmonyNgInfraredReceiver(HarmonyNgEntity, InfraredReceiverEntity):
     def __init__(self, coordinator: HarmonyNgCoordinator) -> None:
         """Create the receiver of the Hub."""
         super().__init__(coordinator, RECEIVER)
+        self._was_available = False
+        self._hub_seen: HubStatus | None = None
 
     @property
     def available(self) -> bool:
@@ -105,7 +109,25 @@ class HarmonyNgInfraredReceiver(HarmonyNgEntity, InfraredReceiverEntity):
         """Subscribe to captured signals and turn the Hub's capture on."""
         await super().async_added_to_hass()
         self.async_on_remove(self.coordinator.async_add_ir_listener(self._handle_signal))
+        self._was_available = self.available
+        self._hub_seen = self.state_data.hub
         await self._async_set_capture(True)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Turn capture on again after a Hub restart or a status that says it is off."""
+        available = self.available
+        came_back = available and not self._was_available
+        self._was_available = available
+        hub = self.state_data.hub
+        # A status the Hub sent anew, not the same one carried along with each event
+        reports_off = hub is not self._hub_seen and hub.ir_capture is False
+        self._hub_seen = hub
+        if available and (came_back or reports_off):
+            self.coordinator.config_entry.async_create_background_task(
+                self.hass, self._async_set_capture(True), "harmony_ng infrared capture"
+            )
+        super()._handle_coordinator_update()
 
     async def async_will_remove_from_hass(self) -> None:
         """Turn the Hub's capture off."""

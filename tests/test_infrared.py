@@ -18,7 +18,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 
 from .conftest import FakeTransport
-from .pyharmonyng.conftest import load_json
+from .pyharmonyng.conftest import load_frames, load_json
 
 FRONT = "infrared.living_room_hub_front_blaster"
 
@@ -136,3 +136,43 @@ async def test_receiver_capture_error_is_logged(
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
     assert "Could not start infrared capture" in caplog.text
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_receiver_capture_back_on_after_restart(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    """The Hub boots with capture off: the receiver turns it on again."""
+    data = load_json("snapshot")
+    data["hub"]["capabilities"].append("ir_capture")
+    data["hub"]["ir_capture"] = True
+    fake_transport.snapshot = Snapshot.from_json(data)
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done(wait_background_tasks=True)
+
+    def enables() -> int:
+        return fake_transport.commands().count(("ir_capture", (True,)))
+
+    assert enables() == 1
+    # Events carry the same status along: no new request
+    fake_transport.push_frames("ws_ir_received")
+    fake_transport.push(load_frames("ws_rf_status")[0])
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert enables() == 1
+
+    # The Hub restarted: back with capture off
+    fake_transport.drop()
+    await hass.async_block_till_done()
+    assert hass.states.get(RECEIVER).state == STATE_UNAVAILABLE
+    restarted = load_json("snapshot")
+    restarted["hub"]["capabilities"].append("ir_capture")
+    restarted["hub"]["ir_capture"] = False
+    fake_transport.restore(Snapshot.from_json(restarted))
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert enables() == 2
+
+    # A new status that says off, while connected (e.g. republished over MQTT)
+    fake_transport.restore(Snapshot.from_json(restarted))
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert enables() == 3

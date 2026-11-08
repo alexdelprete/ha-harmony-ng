@@ -94,6 +94,7 @@
         'firmware': '',
         'hub_id': '20140101120000-000001',
         'hub_name': 'Living Room Hub',
+        'ir_capture': None,
         'legacy_enabled': False,
         'mdns_enabled': True,
         'mqtt': None,

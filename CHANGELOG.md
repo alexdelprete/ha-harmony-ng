@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Infrared receiver: the Hub starts every boot with capture off, and the receiver turned it on
+  only when the entity was added. After a Hub restart it stayed silent. Capture is now turned
+  on again whenever the Hub comes back, or when a status from the Hub reports it off.
+
+### Changed
+
+- The client library is tested against the firmware's recorded infrared capture: a real
+  `ir_received` event, the capture toggle's reply and the raw infrared request that sends the
+  timings back.
+
 ## [0.1.3] - 2026-11-07
 
 ### Added
