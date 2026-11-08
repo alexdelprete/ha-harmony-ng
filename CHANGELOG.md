@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Infrared receiver: the Hub starts every boot with capture off, and the receiver turned it on
   only when the entity was added. After a Hub restart it stayed silent. Capture is now turned
-  on again whenever the Hub comes back, or when a status from the Hub reports it off.
+  on again whenever the Hub comes back, or when the Hub reports it off: in a new status, in
+  its `ir_capture` WebSocket event, or in the republished MQTT `hub` object.
 
 ### Changed
 

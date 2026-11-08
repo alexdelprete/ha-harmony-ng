@@ -19,6 +19,7 @@ from .models import (
     RfStatus,
     _int,
     _list,
+    _opt_str,
 )
 
 
@@ -85,6 +86,14 @@ class IrReceivedEvent(HubEvent):
     signal: IrSignal
 
 
+@dataclass(frozen=True, slots=True)
+class IrCaptureEvent(HubEvent):
+    """Infrared capture was turned on or off, or its receiver error changed."""
+
+    enabled: bool
+    error: str | None
+
+
 EVENT_ACTIVITY_STATE: Final = "activity_state"
 EVENT_ACTIVITY_PROGRESS: Final = "activity_progress"
 EVENT_CONFIG_CHANGED: Final = "config_changed"
@@ -92,6 +101,7 @@ EVENT_BT_STATUS: Final = "bt_status"
 EVENT_RF_STATUS: Final = "rf_status"
 EVENT_BUTTON: Final = "button"
 EVENT_IR_RECEIVED: Final = "ir_received"
+EVENT_IR_CAPTURE: Final = "ir_capture"
 
 
 def _activity_state(header: HubEvent, data: JsonDict) -> HubEvent:
@@ -131,6 +141,16 @@ def _ir_received(header: HubEvent, data: JsonDict) -> HubEvent:
     return IrReceivedEvent(header.type, header.seq, header.ts, signal=IrSignal.from_json(data))
 
 
+def _ir_capture(header: HubEvent, data: JsonDict) -> HubEvent:
+    return IrCaptureEvent(
+        header.type,
+        header.seq,
+        header.ts,
+        enabled=bool(data.get("ir_capture")),
+        error=_opt_str(data, "ir_capture_error"),
+    )
+
+
 _PARSERS: Final[Mapping[str, Callable[[HubEvent, JsonDict], HubEvent]]] = {
     EVENT_ACTIVITY_STATE: _activity_state,
     EVENT_ACTIVITY_PROGRESS: _activity_progress,
@@ -139,6 +159,7 @@ _PARSERS: Final[Mapping[str, Callable[[HubEvent, JsonDict], HubEvent]]] = {
     EVENT_RF_STATUS: _rf_status,
     EVENT_BUTTON: _button,
     EVENT_IR_RECEIVED: _ir_received,
+    EVENT_IR_CAPTURE: _ir_capture,
 }
 
 EVENT_TYPES: Final = frozenset(_PARSERS)

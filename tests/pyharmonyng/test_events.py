@@ -96,6 +96,7 @@ def test_event_types_listed() -> None:
         "rf_status",
         "button",
         "ir_received",
+        "ir_capture",
     } == EVENT_TYPES
 
 

@@ -176,3 +176,38 @@ async def test_receiver_capture_back_on_after_restart(
     fake_transport.restore(Snapshot.from_json(restarted))
     await hass.async_block_till_done(wait_background_tasks=True)
     assert enables() == 3
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_receiver_follows_capture_event(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    """The Hub announces a change of the mode: off while enabled turns it on again."""
+    data = load_json("snapshot")
+    data["hub"]["capabilities"].append("ir_capture")
+    fake_transport.snapshot = Snapshot.from_json(data)
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    coordinator = mock_config_entry.runtime_data.coordinator
+
+    def enables() -> int:
+        return fake_transport.commands().count(("ir_capture", (True,)))
+
+    assert enables() == 1
+    on, off = load_frames("firmware/ws_ir_capture")
+    fake_transport.push(on)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert coordinator.data.hub.ir_capture is True
+    assert enables() == 1
+
+    # Switched off elsewhere (the web UI): the receiver wants it on
+    fake_transport.push(off)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert coordinator.data.hub.ir_capture is False
+    assert enables() == 2
+
+    fake_transport.push({**on, "ir_capture_error": "stalled"})
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert coordinator.data.hub.ir_capture_error == "stalled"
+    assert enables() == 2

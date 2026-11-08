@@ -3,7 +3,7 @@
 The files under fixtures/firmware are copied unchanged from the harmony-ng
 firmware's tests/fixtures/ha, which the firmware builds with its real writers
 (the RF status builder, hub_btstack's status file, a real infrared capture), at
-branch hub/published-ir (e71e470), whose fixtures equal the prepared upstream chain.
+branch hub/published-ir (8924294), whose fixtures equal the prepared upstream chain.
 The other fixtures are shaped for the integration tests; these keep the parsing
 honest about the key names the firmware really uses.
 """
@@ -20,9 +20,11 @@ from custom_components.harmony_ng.pyharmonyng import (
     HarmonyNgClient,
     HubStatus,
     Inventory,
+    IrCaptureEvent,
     IrSignal,
     RfStatus,
     Snapshot,
+    parse,
 )
 
 from .conftest import FakeHub, load_frames, load_json
@@ -133,6 +135,19 @@ def test_ir_received() -> None:
     assert signal.timings[0] > 0 > signal.timings[1]
     # Too few carrier pulses to measure it: no modulation, the timings still count
     assert IrSignal.from_json({**frame, "modulation": None}).modulation is None
+
+
+def test_ir_capture_event() -> None:
+    """Sent on every change of the mode, with the error only while there is one."""
+    on, off = (parse(frame) for frame in load_frames(FIRMWARE + "ws_ir_capture"))
+    assert isinstance(on, IrCaptureEvent)
+    assert isinstance(off, IrCaptureEvent)
+    assert (on.enabled, on.error) == (True, None)
+    assert (off.enabled, off.error) == (False, None)
+    assert off.seq > on.seq
+    failing = parse({"type": "ir_capture", "ir_capture": True, "ir_capture_error": "stalled"})
+    assert isinstance(failing, IrCaptureEvent)
+    assert failing.error == "stalled"
 
 
 async def test_ir_capture_and_raw(client: HarmonyNgClient, hub: FakeHub) -> None:
