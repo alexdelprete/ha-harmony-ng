@@ -191,7 +191,7 @@ Changing a setting takes effect without a restart.
 - Every new source file that has pure logic (event bus, mDNS packet builder, legacy config
   generator, legacy framing) gets a C unit test. Every new endpoint or message gets a Python test
   against `hub_daemon_test`.
-- `bash build/compile_all.sh` and `bash build/compile_all.sh elite` must succeed before a milestone
+- `bash build/compile_all.sh` and `bash build/compile_all.sh remote` must succeed before a milestone
   is tested on the Hub.
 - CI (`.github/workflows/ci.yml`) must be green on the PR.
 
@@ -312,10 +312,12 @@ The handler in `http_api_remotes.c` dispatches to MQTT only and drops releases.
 - The handler emits `HUB_EV_BUTTON` for every call, press and release alike, before any MQTT work:
 
   ```json
-  {"type":"button","slot":1,"button":"VolumeUp","action":"press","source":"elite_rf",
+  {"type":"button","slot":1,"button":"VolumeUp","action":"press","source":"remote_rf",
    "deviceId":"70321456","command":"VolumeUp","seq":18,"ts":1762387200}
   ```
 
+  `source` is `remote_rf` for a key pressed on the Harmony remote over RF (Hubs on a build from
+  before the elite -> remote rename send `elite_rf`).
   `button` is the physical key name as the remote's keymap knows it. `deviceId` and `command` are
   the mapped target when present, otherwise absent. If today's post from `hub_rf` carries only the
   mapped command and not the key name, add the key name to the post (`rf_keymap.c`), since the
@@ -492,9 +494,9 @@ sending a known NEC frame to a device and seeing it react.
 
 ### 3.13 Remote unit id over RF
 
-Both firmwares change, in the same milestone, so the Hub and Elite bundles ship together.
+Both firmwares change, in the same milestone, so the Hub and remote bundles ship together.
 
-Remote side (`payload/source/elite`, `elite_ui`):
+Remote side (`payload/source/remote`, `remote_ui`):
 
 - At start, read `unitid` from the remote's `mfg` partition with the same reader as 2.1 (share
   the parser source file between the two binaries). Fallback when unreadable: an empty string.
@@ -509,7 +511,7 @@ Remote side (`payload/source/elite`, `elite_ui`):
 Hub side (`hub_rf`, `rf_main.c`, `rf_state.c`):
 
 - On `RF_MSG_UNIT_ID` for a slot, store the string in memory and in
-  `/data/harmony/elite_slot<N>_version.json` next to `version` and `caps` (that file is already
+  `/data/harmony/remote_slot<N>_version.json` next to `version` and `caps` (that file is already
   rewritten only on change, so no extra flash writes), and read it back at start.
 - `GET /api/rf/status` gains `slots[].remote_id` (string, absent until the remote has reported it
   since pairing). A change to it counts as a change for the RF status push (3.5).
@@ -998,13 +1000,21 @@ Reference shapes of the six bus events as sent on the WebSocket and as MQTT payl
 {"type":"activity_state","activity":"123456","state":2,"stateName":"running","busy":false,"sending":false,"seq":1,"ts":0}
 {"type":"activity_progress","activity":"123456","activityId":"123456","state":"starting","stateCode":1,"step":2,"currentStep":2,"total":6,"totalSteps":6,"desc":"TV PowerOn","stepDesc":"TV PowerOn","seq":2,"ts":0}
 {"type":"config_changed","files":["devices"],"seq":3,"ts":0}
-{"type":"bt_status","ok":true,"running":true,"connected":true,"target":"AA:BB:CC:DD:EE:FF","devices":[{"bdaddr":"AA:BB:CC:DD:EE:FF","name":"Apple TV"}],"seq":4,"ts":0}
-{"type":"rf_status","ok":true,"running":true,"state":"running","connected":true,"pairing_active":false,"paired":true,"slots":[{"slot":1,"active":true,"remote_id":"20141001120000-000002","model":"Harmony Ultimate","has_screen":true,"battery":{"percent":87,"charging":false,"voltage_mv":3980},"config_version":12,"hub_config_version":12,"in_sync":true,"link":{"last_seen_s":2}}],"seq":5,"ts":0}
-{"type":"button","slot":1,"button":"VolumeUp","action":"press","source":"elite_rf","deviceId":"70321456","command":"VolumeUp","seq":6,"ts":0}
+{"type":"bt_status","backend":"btstack","pid":1234,"state":"connecting","target":"11:22:33:44:55:66","remote":{"connected":true,"addr":"11:22:33:44:55:66"},"host":{"connected":true,"addr":"AA:BB:CC:DD:EE:FF","name":"Media Player","pairing":false},"hosts":[{"addr":"AA:BB:CC:DD:EE:01","name":"Television","connected":false,"paired":true,"cid":2},{"addr":"AA:BB:CC:DD:EE:FF","name":"Media Player","connected":true,"paired":true,"cid":6}],"ok":true,"running":true,"connected":true,"pairing":false,"seq":4,"ts":0}
+{"type":"rf_status","ok":true,"running":true,"state":"running","connected":true,"pairing_active":false,"paired":true,"slots":[{"slot":1,"active":true,"remote_id":"20141001120000-000002","model":"ultimate","model_name":"Harmony Ultimate","skin":100,"equad_id":16417,"has_screen":true,"battery":{"percent":87,"charging":false,"voltage_mv":3980},"config_version":12,"hub_config_version":12,"in_sync":true,"link":{"last_seen_s":2}}],"seq":5,"ts":0}
+{"type":"button","slot":1,"button":"VolumeUp","action":"press","source":"remote_rf","deviceId":"70321456","command":"VolumeUp","seq":6,"ts":0}
 ```
 
-The `rf_status` slot object is whatever `hub_rf` returns today plus nothing new; the fields shown
-are the ones the integration reads (`slot`, `active`, `remote_id`, `model`, `battery.percent`,
+The `bt_status` object is `hub_btstack`'s status file plus four fields `hub_daemon` adds: `ok`,
+`running` (the `hub_btstack` process is alive), `connected` (any host connected) and `pairing`.
+Each paired host is an entry of `hosts` keyed by `addr`, with `name`, `connected` and `paired`;
+`host` is the host keys go to. `target` and `remote` are the Bluetooth LE remote, not a host, and
+`state` is that link's state. There is no `devices` list and no `bdaddr` field (an earlier version
+of this appendix showed both).
+
+The `rf_status` slot object is whatever `hub_rf` returns today plus nothing new; `model` is an id
+(`ultimate`, `elite`, ..., `unknown`), `model_name` the product name or `null` while unknown. The
+fields shown are the ones the integration reads (`slot`, `active`, `remote_id`, `model`, `battery.percent`,
 `battery.charging`, `battery.voltage_mv`, `in_sync`, `config_version`, `hub_config_version`). If a
 listed field does not exist in `hub_rf`'s status today, add it.
 
