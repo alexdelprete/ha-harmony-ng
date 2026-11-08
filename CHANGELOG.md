@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Infrared receiver: a request to start capture that failed was not tried again, so capture
+  stayed off until the Hub sent another status. A request sent the moment the Hub comes back
+  online can be lost, because the Hub reports online before it listens for commands over
+  MQTT. A failed request is now tried again every 30 seconds while the Hub does not report
+  capture on, and the failure is logged once.
+
 ## [0.1.4] - 2026-11-08
 
 ### Fixed
