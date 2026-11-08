@@ -2,8 +2,8 @@
 
 The files under fixtures/firmware are copied unchanged from the harmony-ng
 firmware's tests/fixtures/ha, which the firmware builds with its real writers
-(the RF status builder, hub_btstack's status file), at branch hub/combo
-(ed3068c): the milestone chain plus the fixes the Hub runs.
+(the RF status builder, hub_btstack's status file, a real infrared capture), at
+branch hub/published-ir (8924294), whose fixtures equal the prepared upstream chain.
 The other fixtures are shaped for the integration tests; these keep the parsing
 honest about the key names the firmware really uses.
 """
@@ -13,16 +13,21 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from custom_components.harmony_ng.pyharmonyng import (
+    CAP_IR_CAPTURE,
     Activity,
     BtStatus,
     Device,
+    HarmonyNgClient,
     HubStatus,
     Inventory,
+    IrCaptureEvent,
+    IrSignal,
     RfStatus,
     Snapshot,
+    parse,
 )
 
-from .conftest import load_json
+from .conftest import FakeHub, load_frames, load_json
 
 FIRMWARE = "firmware/"
 HOSTS = [
@@ -39,7 +44,15 @@ def test_status() -> None:
     status = HubStatus.from_json(load_json(FIRMWARE + "status"))
     assert status.hub_id == "20140101120000-000001"
     assert status.api_version >= 2
-    assert status.boot_time == datetime.fromtimestamp(1793936234, tz=UTC)
+    assert status.boot_time == datetime.fromtimestamp(1794026082, tz=UTC)
+    assert status.has(CAP_IR_CAPTURE)
+    # Off after every Hub start: the receiver entity turns it on again
+    assert status.ir_capture is False
+    # Present only while capture is on and the receiver has a problem
+    on_with_error = {**load_json(FIRMWARE + "status"), "ir_capture": True}
+    assert HubStatus.from_json(on_with_error).ir_capture_error is None
+    on_with_error["ir_capture_error"] = "receiver stalled"
+    assert HubStatus.from_json(on_with_error).ir_capture_error == "receiver stalled"
 
 
 def test_bt_status() -> None:
@@ -86,6 +99,9 @@ def test_snapshot() -> None:
     assert snapshot.hub.hub_id == "20140101120000-000001"
     assert _hosts(snapshot.bt_status) == HOSTS
     assert snapshot.rf_status.slot(1) is not None
+    assert snapshot.hub.has(CAP_IR_CAPTURE)
+    assert snapshot.hub.ir_capture is False
+    assert snapshot.hub.ir_capture_error is None
 
 
 def test_mqtt_retained() -> None:
@@ -102,3 +118,47 @@ def test_mqtt_retained() -> None:
     assert _hosts(BtStatus.from_json(retained["harmony/hub/bt"])) == HOSTS
     rf = RfStatus.from_json(retained["harmony/hub/rf"])
     assert rf.slot(1) is not None
+    hub = HubStatus.from_json(retained["harmony/hub/hub"])
+    assert hub.has(CAP_IR_CAPTURE)
+    assert hub.ir_capture is False
+    # ir/received is QoS 0 and never retained
+    assert not any(topic.endswith("/ir/received") for topic in retained)
+
+
+def test_ir_received() -> None:
+    """A real capture: a soundbar's Volume Up."""
+    (frame,) = load_frames(FIRMWARE + "ws_ir_received")
+    assert frame["type"] == "ir_received"
+    signal = IrSignal.from_json(frame)
+    assert signal.modulation == 37700
+    assert len(signal.timings) == len(frame["timings"]) > 2
+    assert signal.timings[0] > 0 > signal.timings[1]
+    # Too few carrier pulses to measure it: no modulation, the timings still count
+    assert IrSignal.from_json({**frame, "modulation": None}).modulation is None
+
+
+def test_ir_capture_event() -> None:
+    """Sent on every change of the mode, with the error only while there is one."""
+    on, off = (parse(frame) for frame in load_frames(FIRMWARE + "ws_ir_capture"))
+    assert isinstance(on, IrCaptureEvent)
+    assert isinstance(off, IrCaptureEvent)
+    assert (on.enabled, on.error) == (True, None)
+    assert (off.enabled, off.error) == (False, None)
+    assert off.seq > on.seq
+    failing = parse({"type": "ir_capture", "ir_capture": True, "ir_capture_error": "stalled"})
+    assert isinstance(failing, IrCaptureEvent)
+    assert failing.error == "stalled"
+
+
+async def test_ir_capture_and_raw(client: HarmonyNgClient, hub: FakeHub) -> None:
+    """The capture toggle's reply, and the request that sends timings back."""
+    hub.responses["/api/ir-capture"] = (200, load_json(FIRMWARE + "ir_capture_response"))
+    await client.ir_capture(True)
+    request = load_json(FIRMWARE + "ir_raw_request")
+    await client.ir_raw(
+        request["frequency"], request["timings"], port=request["port"], repeats=request["repeats"]
+    )
+    assert hub.requests[-2:] == [
+        ("POST", "/api/ir-capture", {"enabled": True}),
+        ("POST", "/api/ir-raw", request),
+    ]

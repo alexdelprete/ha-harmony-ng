@@ -42,6 +42,7 @@ from .pyharmonyng import (
     HubEvent,
     HubStatus,
     Inventory,
+    IrCaptureEvent,
     IrReceivedEvent,
     IrSignal,
     RemoteButton,
@@ -416,6 +417,10 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
             return replace(state, rf=event.status, received_at=now)
         if isinstance(event, ButtonEvent):
             return replace(state, last_button=event.button, received_at=now)
+        if isinstance(event, IrCaptureEvent):
+            # A new hub object: the receiver sees the change like a new status
+            hub = replace(state.hub, ir_capture=event.enabled, ir_capture_error=event.error)
+            return replace(state, hub=hub, received_at=now)
         return state
 
     def _track_last_activity(self, activity: ActivityState) -> None:
