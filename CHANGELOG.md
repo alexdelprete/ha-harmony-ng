@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-11-09
+
 ### Fixed
 
 - Infrared receiver: a request to start capture that failed was not tried again, so capture
@@ -14,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   online can be lost, because the Hub reports online before it listens for commands over
   MQTT. A failed request is now tried again every 30 seconds while the Hub does not report
   capture on, and the failure is logged once.
+
+### Changed
+
+- The repository's copy of the firmware specification matches the firmware again: the
+  `remote_rf` button source, the remote renames, and the Bluetooth and RF status as the firmware
+  writes them.
 
 ## [0.1.4] - 2026-11-08
 
