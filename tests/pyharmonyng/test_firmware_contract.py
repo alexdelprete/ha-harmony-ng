@@ -3,7 +3,7 @@
 The files under fixtures/firmware are copied unchanged from the harmony-ng
 firmware's tests/fixtures/ha, which the firmware builds with its real writers
 (the RF status builder, hub_btstack's status file, a real infrared capture), at
-branch hub/published-ir (b60f477), whose fixtures equal the prepared upstream chain.
+branch hub/published-ir (e71e470), whose fixtures equal the prepared upstream chain.
 The other fixtures are shaped for the integration tests; these keep the parsing
 honest about the key names the firmware really uses.
 """
@@ -46,6 +46,11 @@ def test_status() -> None:
     assert status.has(CAP_IR_CAPTURE)
     # Off after every Hub start: the receiver entity turns it on again
     assert status.ir_capture is False
+    # Present only while capture is on and the receiver has a problem
+    on_with_error = {**load_json(FIRMWARE + "status"), "ir_capture": True}
+    assert HubStatus.from_json(on_with_error).ir_capture_error is None
+    on_with_error["ir_capture_error"] = "receiver stalled"
+    assert HubStatus.from_json(on_with_error).ir_capture_error == "receiver stalled"
 
 
 def test_bt_status() -> None:
@@ -93,8 +98,8 @@ def test_snapshot() -> None:
     assert _hosts(snapshot.bt_status) == HOSTS
     assert snapshot.rf_status.slot(1) is not None
     assert snapshot.hub.has(CAP_IR_CAPTURE)
-    # Only GET /api/status says whether capture is on; the snapshot does not
-    assert snapshot.hub.ir_capture is None
+    assert snapshot.hub.ir_capture is False
+    assert snapshot.hub.ir_capture_error is None
 
 
 def test_mqtt_retained() -> None:
@@ -111,6 +116,9 @@ def test_mqtt_retained() -> None:
     assert _hosts(BtStatus.from_json(retained["harmony/hub/bt"])) == HOSTS
     rf = RfStatus.from_json(retained["harmony/hub/rf"])
     assert rf.slot(1) is not None
+    hub = HubStatus.from_json(retained["harmony/hub/hub"])
+    assert hub.has(CAP_IR_CAPTURE)
+    assert hub.ir_capture is False
     # ir/received is QoS 0 and never retained
     assert not any(topic.endswith("/ir/received") for topic in retained)
 

@@ -171,6 +171,7 @@ class HubStatus:
     mqtt: MqttInfo | None
     boot_time: datetime | None = None
     ir_capture: bool | None = None
+    ir_capture_error: str | None = None
 
     @classmethod
     def from_json(cls, data: JsonDict) -> Self:
@@ -205,6 +206,7 @@ class HubStatus:
             mqtt=MqttInfo.from_json(mqtt) if isinstance(mqtt, Mapping) else None,
             boot_time=_opt_epoch(data, "boot_time"),
             ir_capture=bool(data["ir_capture"]) if data.get("ir_capture") is not None else None,
+            ir_capture_error=_opt_str(data, "ir_capture_error"),
         )
 
     def has(self, capability: str) -> bool:

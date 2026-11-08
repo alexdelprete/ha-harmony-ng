@@ -95,6 +95,7 @@
         'hub_id': '20140101120000-000001',
         'hub_name': 'Living Room Hub',
         'ir_capture': None,
+        'ir_capture_error': None,
         'legacy_enabled': False,
         'mdns_enabled': True,
         'mqtt': None,
