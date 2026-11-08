@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 from unittest.mock import patch
 
 from infrared_protocols.commands.nec import NECCommand
 import pytest
-from pytest_homeassistant.common import MockConfigEntry, snapshot_platform
+from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed, snapshot_platform
 from syrupy.assertion import SnapshotAssertion
 
 from custom_components.harmony_ng.pyharmonyng import HarmonyNgConnectionError, Snapshot
@@ -16,6 +17,7 @@ from homeassistant.const import STATE_UNAVAILABLE, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
+from homeassistant.util import dt as dt_util
 
 from .conftest import FakeTransport
 from .pyharmonyng.conftest import load_frames, load_json
@@ -136,6 +138,100 @@ async def test_receiver_capture_error_is_logged(
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
     assert "Could not start infrared capture" in caplog.text
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_receiver_capture_retried(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    fake_transport: FakeTransport,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A request lost right after the Hub came back is tried again, logged once."""
+    data = load_json("snapshot")
+    data["hub"]["capabilities"].append("ir_capture")
+    data["hub"]["ir_capture"] = False
+    fake_transport.snapshot = Snapshot.from_json(data)
+    fake_transport.errors["ir_capture"] = HarmonyNgConnectionError("no reply from the Hub")
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done(wait_background_tasks=True)
+
+    def enables() -> int:
+        return fake_transport.commands().count(("ir_capture", (True,)))
+
+    assert enables() == 1
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=31))
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert enables() == 2
+    assert caplog.text.count("Could not start infrared capture") == 1
+
+    del fake_transport.errors["ir_capture"]
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=62))
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert enables() == 3
+    assert "Infrared capture started" in caplog.text
+
+    # Started: no more retries
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(minutes=5))
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert enables() == 3
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_receiver_no_retry_once_hub_reports_on(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    """The request ran but its reply was lost: the Hub's status says on, no retry."""
+    data = load_json("snapshot")
+    data["hub"]["capabilities"].append("ir_capture")
+    fake_transport.snapshot = Snapshot.from_json(data)
+    fake_transport.errors["ir_capture"] = HarmonyNgConnectionError("no reply from the Hub")
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    on, _off = load_frames("firmware/ws_ir_capture")
+    fake_transport.push(on)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=31))
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert fake_transport.commands().count(("ir_capture", (True,))) == 1
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_receiver_retry_waits_for_hub(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    """A retry due while the Hub is away is left to the Hub coming back."""
+    data = load_json("snapshot")
+    data["hub"]["capabilities"].append("ir_capture")
+    fake_transport.snapshot = Snapshot.from_json(data)
+    fake_transport.errors["ir_capture"] = HarmonyNgConnectionError("no reply from the Hub")
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    fake_transport.drop()
+    await hass.async_block_till_done()
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=31))
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert fake_transport.commands().count(("ir_capture", (True,))) == 1
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_receiver_retry_cancelled_on_unload(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    data = load_json("snapshot")
+    data["hub"]["capabilities"].append("ir_capture")
+    fake_transport.snapshot = Snapshot.from_json(data)
+    fake_transport.errors["ir_capture"] = HarmonyNgConnectionError("no reply from the Hub")
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    await hass.config_entries.async_unload(mock_config_entry.entry_id)
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=31))
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert fake_transport.commands().count(("ir_capture", (True,))) == 1
 
 
 @pytest.mark.usefixtures("entity_registry_enabled_by_default")

@@ -8,6 +8,7 @@ capture on while it is enabled and republishes every captured signal.
 
 from __future__ import annotations
 
+from datetime import timedelta
 import logging
 
 from homeassistant.components.infrared import (
@@ -18,8 +19,9 @@ from homeassistant.components.infrared import (
     InfraredReceiverEntity,
     InfraredReceiverEntityDescription,
 )
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.event import async_call_later
 
 from . import HarmonyNgConfigEntry
 from .const import IR_EMITTERS
@@ -29,6 +31,10 @@ from .helpers import hub_call
 from .pyharmonyng import CAP_IR_CAPTURE, CAP_IR_RAW, HarmonyNgError, HubStatus, IrSignal
 
 _LOGGER = logging.getLogger(__name__)
+
+# A request to start capture that failed (one sent right after the Hub came back can
+# be lost) is tried again while the Hub does not report capture on
+CAPTURE_RETRY_AFTER = timedelta(seconds=30)
 
 EMITTERS: tuple[InfraredEmitterEntityDescription, ...] = tuple(
     InfraredEmitterEntityDescription(key=key, entity_registry_enabled_default=(port == 1))
@@ -99,6 +105,8 @@ class HarmonyNgInfraredReceiver(HarmonyNgEntity, InfraredReceiverEntity):
         super().__init__(coordinator, RECEIVER)
         self._was_available = False
         self._hub_seen: HubStatus | None = None
+        self._retry_unsub: CALLBACK_TYPE | None = None
+        self._failing = False
 
     @property
     def available(self) -> bool:
@@ -124,15 +132,19 @@ class HarmonyNgInfraredReceiver(HarmonyNgEntity, InfraredReceiverEntity):
         reports_off = hub is not self._hub_seen and hub.ir_capture is False
         self._hub_seen = hub
         if available and (came_back or reports_off):
-            self.coordinator.config_entry.async_create_background_task(
-                self.hass, self._async_set_capture(True), "harmony_ng infrared capture"
-            )
+            self._start_capture()
         super()._handle_coordinator_update()
 
     async def async_will_remove_from_hass(self) -> None:
         """Turn the Hub's capture off."""
+        self._cancel_retry()
         await self._async_set_capture(False)
         await super().async_will_remove_from_hass()
+
+    def _start_capture(self) -> None:
+        self.coordinator.config_entry.async_create_background_task(
+            self.hass, self._async_set_capture(True), "harmony_ng infrared capture"
+        )
 
     async def _async_set_capture(self, enabled: bool) -> None:
         if not self.available:
@@ -140,9 +152,45 @@ class HarmonyNgInfraredReceiver(HarmonyNgEntity, InfraredReceiverEntity):
         try:
             await self.coordinator.transport.ir_capture(enabled)
         except HarmonyNgError as err:
-            _LOGGER.warning(
-                "Could not %s infrared capture: %s", "start" if enabled else "stop", err
-            )
+            if not enabled:
+                _LOGGER.warning("Could not stop infrared capture: %s", err)
+                return
+            if not self._failing:
+                _LOGGER.warning(
+                    "Could not start infrared capture, retrying in %s: %s",
+                    CAPTURE_RETRY_AFTER,
+                    err,
+                )
+            self._failing = True
+            self._schedule_retry()
+            return
+        if enabled:
+            self._capture_started()
+
+    def _capture_started(self) -> None:
+        if self._failing:
+            _LOGGER.info("Infrared capture started")
+        self._failing = False
+        self._cancel_retry()
+
+    def _schedule_retry(self) -> None:
+        self._cancel_retry()
+        self._retry_unsub = async_call_later(self.hass, CAPTURE_RETRY_AFTER, self._async_retry)
+
+    @callback
+    def _async_retry(self, _now: object) -> None:
+        self._retry_unsub = None
+        if self.state_data.hub.ir_capture is True:
+            # The request went through after all, or another one did
+            self._capture_started()
+        elif self.available:
+            self._start_capture()
+        # Unavailable: the Hub coming back starts capture
+
+    def _cancel_retry(self) -> None:
+        if self._retry_unsub is not None:
+            self._retry_unsub()
+            self._retry_unsub = None
 
     @callback
     def _handle_signal(self, signal: IrSignal) -> None:
