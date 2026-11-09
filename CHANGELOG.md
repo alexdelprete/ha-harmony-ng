@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-11-09
+
 ### Added
 
 - The Hub's remote has an `activity_queued` attribute: the activity the Hub starts when the
@@ -200,7 +202,8 @@ event bus (`api_version` 2 or newer). Requires Home Assistant 2026.11.0 or newer
 - Harmony NG brand images served by the integration.
 - Quality scale `platinum`: every Bronze to Platinum rule done or exempt.
 
-[Unreleased]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.8...HEAD
+[Unreleased]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.9...HEAD
+[0.1.9]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.8...v0.1.9
 [0.1.8]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.5...v0.1.6
