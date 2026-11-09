@@ -78,7 +78,19 @@ async def test_token_header(hub: FakeHub, session: aiohttp.ClientSession) -> Non
     assert (await client.get_status()).hub_id
 
 
+async def test_activity_request_queued(client: HarmonyNgClient, hub: FakeHub) -> None:
+    """Firmware with the request queue answers a request made during a transition.
+
+    The request starts when the running transition completes; it is a success.
+    """
+    hub.responses["/api/activity"] = (200, {"success": True, "state": "queued"})
+    hub.responses["/api/poweroff"] = (200, {"success": True, "state": "queued"})
+    await client.start_activity("123456")
+    await client.power_off()
+
+
 async def test_error_mapping(client: HarmonyNgClient, hub: FakeHub) -> None:
+    # Firmware before the request queue refuses a start during a transition
     hub.responses["/api/activity"] = (409, {"ok": False, "error": "Interlock busy"})
     with pytest.raises(HarmonyNgBusyError, match="Interlock busy"):
         await client.start_activity("123456")

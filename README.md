@@ -179,7 +179,9 @@ which it does with increasing delays up to 30 seconds.
   core Harmony integration can also see it and would create duplicate entities. Disable the
   setting on the Hub or remove the core integration's entry for this Hub.
 - **Commands refused as busy**: the Hub is switching activities; wait for it to finish or use
-  `harmony_ng.activity_cancel` if it is stuck.
+  `harmony_ng.activity_cancel` if it is stuck. Firmware with the activity request queue does not
+  refuse an activity start or power off during a switch: it runs the latest one when the switch
+  completes.
 
 ## Removal
 

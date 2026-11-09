@@ -17,12 +17,13 @@ says so ("As built"); section 9 lists what was added beyond it.
 | --- | --- | --- |
 | Milestone 1 (3.1-3.13) | #97 (A1) | merged |
 | 3.14 one-shot capture (`POST /api/capture`) | #98 | merged |
-| 3.14 capture mode, capture state and event | A4 | not posted yet |
-| Milestones 2 and 3 (mDNS, MQTT v2) | #99 (A2) | open |
-| Milestone 4 (Logitech shim, SSDP) | A3 | not posted yet (after #99) |
-| Section 9 additions | A4, #101 | A4 not posted yet; #101 open |
+| 3.14 capture mode, capture state and event | #104 (A4) | merged |
+| Milestones 2 and 3 (mDNS, MQTT v2) | #99 (A2) | merged |
+| Milestone 4 (Logitech shim, SSDP) | #103 (A3) | merged |
+| Section 9 additions | #104 (A4), #101 | merged |
+| Activity requests queued during a transition (follow-up) | #105 | open |
 
-The development Hub and remote run all of it (upstream main plus #99, A3, A4 and #101).
+Everything above except #105 is in upstream main as of 2026-11-09. The development Hub and remote run main plus #105.
 
 ## 0. How to use this document
 

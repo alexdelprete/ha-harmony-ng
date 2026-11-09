@@ -341,11 +341,31 @@ async def test_commands(
     transport.set_token("ignored")
 
 
+async def test_activity_request_queued(
+    hass: HomeAssistant, mqtt_entry: MockConfigEntry, mqtt_mock: MqttMockHAClient
+) -> None:
+    """A request queued behind a running transition is acknowledged as a success."""
+    await setup_mqtt(hass, mqtt_entry)
+    transport = mqtt_entry.runtime_data.coordinator.transport
+    queued = {"ok": True, "state": "queued"}
+    await answer(
+        hass,
+        mqtt_mock,
+        lambda: transport.start_activity("1"),
+        {"action": "start_activity", **queued},
+    )
+    _, _, request = await answer(
+        hass, mqtt_mock, transport.power_off, {"action": "stop_activity", **queued}
+    )
+    assert request["action"] == "stop_activity"
+
+
 async def test_command_errors(
     hass: HomeAssistant, mqtt_entry: MockConfigEntry, mqtt_mock: MqttMockHAClient
 ) -> None:
     await setup_mqtt(hass, mqtt_entry)
     transport = mqtt_entry.runtime_data.coordinator.transport
+    # Firmware before the request queue refuses a start during a transition
     with pytest.raises(HarmonyNgBusyError, match="busy"):
         await answer(
             hass,

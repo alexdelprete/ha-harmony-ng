@@ -101,6 +101,12 @@ class HarmonyNgClient:
   or `403` becomes `HarmonyNgAuthError`. Connection and timeout errors become
   `HarmonyNgConnectionError`. Any other non-2xx, or a 2xx body whose `ok` or `success` is false,
   becomes `HarmonyNgApiError` with the Hub's `error` string and the status code.
+- **As built**: firmware with the activity request queue (harmony-ng PR #105) no longer refuses an activity start or
+  power off during a transition. REST answers 200 with `state` `queued`, and the WebSocket and MQTT acknowledgements
+  carry the same `state`; the Hub runs the latest request when the transition completes. The library treats it as
+  any success, so nothing changed in the integration. `GET /api/activity` names the queued id in `queued`, but no
+  event carries it, so the integration does not expose it: a value read once would go stale on the push transports.
+  Firmware without the queue still answers `409`, which stays `HarmonyNgBusyError`.
 - `get_status` raises `HarmonyNgUnsupportedError` when the reply has no `hub_id` or an `api_version`
   below `MIN_API_VERSION` (firmware before milestone 1) and exposes `HubStatus.capabilities` as a
   frozenset of strings.

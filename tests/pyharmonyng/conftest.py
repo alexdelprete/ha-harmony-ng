@@ -43,6 +43,7 @@ class FakeHub:
         self.ws_status: int | None = None
         self.frames_on_connect: list[dict[str, Any]] = []
         self.ack_error: str | None = None
+        self.ack_fields: dict[str, Any] = {}
         self.silent_acks = False
         self.actions: list[dict[str, Any]] = []
         self.connections = 0
@@ -140,6 +141,8 @@ class FakeHub:
                 reply["msgId"] = msg_id
             if self.ack_error is not None:
                 reply["error"] = self.ack_error
+            else:
+                reply.update(self.ack_fields)
             await ws.send_json(reply)
 
 

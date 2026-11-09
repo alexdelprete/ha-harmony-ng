@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Activity requests during a switch: firmware with the activity request queue (harmony-ng pull request 105)
+  no longer refuses an activity start or power off while the Hub switches activities. It answers
+  "queued" and runs the latest request when the switch completes. The integration already takes
+  that reply as a success on the API and MQTT transports, now covered by tests; firmware without
+  the queue still refuses as busy. The README and the integration specification describe it, and
+  the repository's copy of the firmware specification has the upstream status of every milestone.
+
 ## [0.1.8] - 2026-11-09
 
 ### Fixed

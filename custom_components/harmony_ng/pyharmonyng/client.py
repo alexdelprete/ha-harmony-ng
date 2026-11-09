@@ -192,13 +192,17 @@ class HarmonyNgClient:
     async def start_activity(self, activity_id: str) -> None:
         """Start an activity.
 
+        During an activity change, firmware with the request queue answers with
+        state "queued" and starts the request when the change completes.
+
         Raises:
-            HarmonyNgBusyError: another activity change is in progress.
+            HarmonyNgBusyError: firmware without the request queue refuses during
+                an activity change.
         """
         await self._post("/api/activity", {"activity": activity_id})
 
     async def power_off(self) -> None:
-        """Stop the running activity."""
+        """Stop the running activity; queued or refused as busy like `start_activity`."""
         await self._post("/api/poweroff")
 
     async def cancel_activity(self) -> None:
