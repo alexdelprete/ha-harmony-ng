@@ -11,6 +11,7 @@ from custom_components.harmony_ng.pyharmonyng import (
     ButtonEvent,
     ConfigChangedEvent,
     IrReceivedEvent,
+    MqttStatusEvent,
     RfStatusEvent,
     parse,
 )
@@ -97,7 +98,30 @@ def test_event_types_listed() -> None:
         "button",
         "ir_received",
         "ir_capture",
+        "mqtt_status",
     } == EVENT_TYPES
+
+
+def test_mqtt_status_event() -> None:
+    """Sent at start, on connect, on loss and after an MQTT settings save."""
+    frame = {
+        "type": "mqtt_status",
+        "seq": 9,
+        "ts": 0,
+        "enabled": True,
+        "connected": True,
+        "broker": "broker.example",
+        "port": 1883,
+        "baseTopic": "harmony/hub",
+        "haDiscovery": False,
+    }
+    event = parse(frame)
+    assert isinstance(event, MqttStatusEvent)
+    assert (event.seq, event.ha_discovery) == (9, False)
+    del frame["haDiscovery"]
+    event = parse(frame)
+    assert isinstance(event, MqttStatusEvent)
+    assert event.ha_discovery is None
 
 
 def test_ir_received_event() -> None:

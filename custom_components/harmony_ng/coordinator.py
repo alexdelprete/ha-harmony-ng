@@ -46,12 +46,14 @@ from .pyharmonyng import (
     IrCaptureEvent,
     IrReceivedEvent,
     IrSignal,
+    MqttStatusEvent,
     RemoteButton,
     RfSlot,
     RfStatus,
     RfStatusEvent,
     Snapshot,
 )
+from .repairs import async_refresh_discovery_issue
 from .transport import HarmonyNgTransport
 
 _LOGGER = logging.getLogger(__name__)
@@ -179,6 +181,8 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         self._last_activity_id: str | None = None
         self._button_listeners: dict[int, list[ButtonListener]] = {}
         self._ir_listeners: list[IrListener] = []
+        self._discovery_checked = False
+        self._ha_discovery: bool | None = None
         transport.set_callbacks(
             on_event=self._handle_event,
             on_connection=self._handle_connection,
@@ -420,6 +424,8 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         self._state = state
         if self.data is not None or self.last_update_success is False:
             self.async_set_updated_data(state)
+        if self._discovery_checked and state.hub.ha_discovery != self._ha_discovery:
+            self.async_refresh_discovery_issue(state.hub.ha_discovery)
 
     def _state_from_snapshot(
         self, snapshot: Snapshot, activities: tuple[Activity, ...], inventory: Inventory
@@ -466,6 +472,9 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
             return replace(state, rf=keep_known_products(state.rf, event.status), received_at=now)
         if isinstance(event, ButtonEvent):
             return replace(state, last_button=event.button, received_at=now)
+        if isinstance(event, MqttStatusEvent) and event.ha_discovery is not None:
+            hub = replace(state.hub, ha_discovery=event.ha_discovery)
+            return replace(state, hub=hub, received_at=now)
         if isinstance(event, IrCaptureEvent):
             # A new hub object: the receiver sees the change like a new status
             hub = replace(state.hub, ir_capture=event.enabled, ir_capture_error=event.error)
@@ -553,6 +562,19 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         return True
 
     # Repairs
+
+    @callback
+    def async_refresh_discovery_issue(self, ha_discovery: bool | None) -> None:
+        """Raise or clear the discovery repair for the setting the Hub reports."""
+        self._discovery_checked = True
+        self._ha_discovery = ha_discovery
+        async_refresh_discovery_issue(
+            self.hass,
+            self.config_entry.entry_id,
+            self.config_entry.title,
+            self.hub_id,
+            ha_discovery,
+        )
 
     @callback
     def _async_refresh_issues(

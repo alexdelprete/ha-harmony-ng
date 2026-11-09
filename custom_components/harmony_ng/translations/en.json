@@ -369,12 +369,12 @@
       "description": "The Hub serves the stock Logitech protocol on port 8088, so the core Harmony integration can see the same Hub. Its entities would duplicate this integration's. Disable the setting on the Hub, or remove the core integration's entry for this Hub."
     },
     "mqtt_discovery_orphans": {
-      "title": "{name}: old MQTT entities left behind",
+      "title": "{name}: MQTT discovery entities left behind",
       "fix_flow": {
         "step": {
           "confirm": {
-            "title": "Remove the old MQTT entities",
-            "description": "Older harmony-ng firmware created MQTT discovery entities for the Hub. The Hub no longer publishes them and this integration replaces them. The devices {devices} and their entities will be removed from the MQTT integration; automations that used them must be changed to this integration's entities."
+            "title": "Remove the MQTT discovery entities",
+            "description": "Home Assistant MQTT discovery is turned off on the Hub, but the MQTT integration still has the entities the Hub published while it was on. The Hub no longer updates them and this integration provides the same data. The devices {devices} and their entities will be removed from the MQTT integration; automations that used them must be changed to this integration's entities."
           }
         }
       }

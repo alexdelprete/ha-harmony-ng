@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- MQTT discovery repair: on a Hub that publishes Home Assistant MQTT discovery (the firmware
+  default), a repair called the Hub's discovery device "old MQTT entities left behind" and
+  offered to delete it; the Hub then published it again. The firmware keeps its discovery on
+  purpose, next to this integration. The repair now appears only while the Hub reports
+  discovery off, and only for the device that names this Hub. The Hub reports the setting over
+  WebSocket, and over MQTT from firmware that sends it in its `hub` object; while the setting is
+  unknown there is no repair.
+
 ## [0.1.7] - 2026-11-09
 
 ### Fixed

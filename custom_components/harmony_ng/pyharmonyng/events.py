@@ -19,6 +19,7 @@ from .models import (
     RfStatus,
     _int,
     _list,
+    _opt_bool,
     _opt_str,
 )
 
@@ -94,6 +95,14 @@ class IrCaptureEvent(HubEvent):
     error: str | None
 
 
+@dataclass(frozen=True, slots=True)
+class MqttStatusEvent(HubEvent):
+    """The Hub's MQTT client connected, dropped, or its settings were saved."""
+
+    ha_discovery: bool | None
+    """Whether the Hub publishes Home Assistant MQTT discovery; None when not sent."""
+
+
 EVENT_ACTIVITY_STATE: Final = "activity_state"
 EVENT_ACTIVITY_PROGRESS: Final = "activity_progress"
 EVENT_CONFIG_CHANGED: Final = "config_changed"
@@ -102,6 +111,7 @@ EVENT_RF_STATUS: Final = "rf_status"
 EVENT_BUTTON: Final = "button"
 EVENT_IR_RECEIVED: Final = "ir_received"
 EVENT_IR_CAPTURE: Final = "ir_capture"
+EVENT_MQTT_STATUS: Final = "mqtt_status"
 
 
 def _activity_state(header: HubEvent, data: JsonDict) -> HubEvent:
@@ -151,6 +161,12 @@ def _ir_capture(header: HubEvent, data: JsonDict) -> HubEvent:
     )
 
 
+def _mqtt_status(header: HubEvent, data: JsonDict) -> HubEvent:
+    return MqttStatusEvent(
+        header.type, header.seq, header.ts, ha_discovery=_opt_bool(data, "haDiscovery")
+    )
+
+
 _PARSERS: Final[Mapping[str, Callable[[HubEvent, JsonDict], HubEvent]]] = {
     EVENT_ACTIVITY_STATE: _activity_state,
     EVENT_ACTIVITY_PROGRESS: _activity_progress,
@@ -160,6 +176,7 @@ _PARSERS: Final[Mapping[str, Callable[[HubEvent, JsonDict], HubEvent]]] = {
     EVENT_BUTTON: _button,
     EVENT_IR_RECEIVED: _ir_received,
     EVENT_IR_CAPTURE: _ir_capture,
+    EVENT_MQTT_STATUS: _mqtt_status,
 }
 
 EVENT_TYPES: Final = frozenset(_PARSERS)

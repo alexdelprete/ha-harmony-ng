@@ -31,6 +31,7 @@ from .events import (
     HubEvent,
     IrCaptureEvent,
     IrReceivedEvent,
+    MqttStatusEvent,
     RfStatusEvent,
     parse,
 )
@@ -128,6 +129,7 @@ __all__ = [
     "IrSignal",
     "KeyAction",
     "MqttInfo",
+    "MqttStatusEvent",
     "RemoteButton",
     "RfSlot",
     "RfStatus",

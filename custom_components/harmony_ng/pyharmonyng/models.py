@@ -120,6 +120,11 @@ def _bool(data: JsonDict, *keys: str, default: bool = False) -> bool:
     return default
 
 
+def _opt_bool(data: JsonDict, key: str) -> bool | None:
+    value = data.get(key)
+    return value if isinstance(value, bool) else None
+
+
 def _list(data: JsonDict, *keys: str) -> list[Any]:
     for key in keys:
         value = data.get(key)
@@ -172,6 +177,8 @@ class HubStatus:
     boot_time: datetime | None = None
     ir_capture: bool | None = None
     ir_capture_error: str | None = None
+    ha_discovery: bool | None = None
+    """Whether the Hub publishes Home Assistant MQTT discovery; None while unknown."""
 
     @classmethod
     def from_json(cls, data: JsonDict) -> Self:
@@ -207,6 +214,8 @@ class HubStatus:
             boot_time=_opt_epoch(data, "boot_time"),
             ir_capture=bool(data["ir_capture"]) if data.get("ir_capture") is not None else None,
             ir_capture_error=_opt_str(data, "ir_capture_error"),
+            # Only the retained MQTT hub object carries it (firmware A4 onwards)
+            ha_discovery=_opt_bool(data, "ha_discovery"),
         )
 
     def has(self, capability: str) -> bool:
@@ -563,8 +572,13 @@ class Snapshot:
     def from_json(cls, data: JsonDict) -> Self:
         """Build from a `snapshot` frame."""
         files = _dict(_dict(data, "config"), "files")
+        hub = HubStatus.from_json(_dict(data, "hub"))
+        # Over WebSocket the discovery setting comes with the MQTT client status
+        ha_discovery = _opt_bool(_dict(data, "mqtt_status"), "haDiscovery")
+        if ha_discovery is not None:
+            hub = replace(hub, ha_discovery=ha_discovery)
         return cls(
-            hub=HubStatus.from_json(_dict(data, "hub")),
+            hub=hub,
             activity_state=ActivityState.from_json(_dict(data, "activity_state")),
             bt_status=BtStatus.from_json(_dict(data, "bt_status")),
             rf_status=RfStatus.from_json(_dict(data, "rf_status")),
