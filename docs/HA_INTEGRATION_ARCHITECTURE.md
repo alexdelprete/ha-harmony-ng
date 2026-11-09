@@ -489,7 +489,10 @@ sensor uses it; only firmware without it falls back to the snapshot time minus `
 
 **Hub MQTT discovery.** The firmware keeps Home Assistant MQTT discovery, rebuilt on the v2 topics with the same object
 ids, instead of removing it. Both sets of entities can exist when a user enables discovery on the Hub and also sets up
-this integration. The repair for orphaned discovery entities still assumes removal and needs revising.
+this integration. Since 0.1.8 the repair for discovery entities left behind is raised only while the Hub reports
+discovery off, and only for the device whose identifiers carry `harmony-ng-<hub_id>`. The Hub clears its discovery
+configs itself when discovery is turned off, so the repair only catches a device left behind while Home Assistant was not
+listening.
 
 **Activities.** The Hub lists PowerOff (id -1) with the activities; the integration leaves it out of the activity
 list, as the core integration does. The select still offers PowerOff and the remote reports it as the current

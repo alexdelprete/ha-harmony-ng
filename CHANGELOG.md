@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-11-09
+
 ### Fixed
 
 - MQTT discovery repair: on a Hub that publishes Home Assistant MQTT discovery (the firmware
@@ -16,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   discovery off, and only for the device that names this Hub. The Hub reports the setting over
   WebSocket, and over MQTT from firmware that sends it in its `hub` object; while the setting is
   unknown there is no repair.
+
+### Changed
+
+- Documentation: the repository's copy of the firmware specification is version 1.1, and the
+  integration specification and architecture document describe the integration as built:
+  infrared capture, MQTT command ids, the remote model, boot time, the battery report, the
+  Hub's own MQTT discovery, activities and Bluetooth.
 
 ## [0.1.7] - 2026-11-09
 
@@ -174,7 +183,12 @@ event bus (`api_version` 2 or newer). Requires Home Assistant 2026.11.0 or newer
 - Harmony NG brand images served by the integration.
 - Quality scale `platinum`: every Bronze to Platinum rule done or exempt.
 
-[Unreleased]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.8...HEAD
+[0.1.8]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.7...v0.1.8
+[0.1.7]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.6...v0.1.7
+[0.1.6]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.5...v0.1.6
+[0.1.5]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.4...v0.1.5
+[0.1.4]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.0...v0.1.1
