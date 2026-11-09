@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- PowerOff listed twice: the Hub lists PowerOff with the activities, so the activity select
+  offered it twice, the remote's activity list included it, the options offered it as the
+  default activity, and a "Start PowerOff" button duplicated the Power off button. The Hub's
+  entry is now left out, as the core integration does, and the extra button is removed. The
+  remote still reports PowerOff as its current activity while the Hub is off.
+
 ## [0.1.6] - 2026-11-09
 
 ### Fixed

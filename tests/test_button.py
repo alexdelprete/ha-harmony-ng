@@ -9,6 +9,7 @@ import pytest
 from pytest_homeassistant.common import MockConfigEntry, snapshot_platform
 from syrupy.assertion import SnapshotAssertion
 
+from custom_components.harmony_ng.const import DOMAIN
 from custom_components.harmony_ng.pyharmonyng import CommandAction, HarmonyNgApiError, Snapshot
 from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN, SERVICE_PRESS
 from homeassistant.const import ATTR_ENTITY_ID, STATE_UNAVAILABLE, Platform
@@ -16,7 +17,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 
-from .conftest import FakeTransport
+from .conftest import HUB_ID, POWER_OFF_ACTIVITY, FakeTransport
 from .pyharmonyng.conftest import load_json
 
 
@@ -126,3 +127,26 @@ async def test_device_command_buttons(
     coordinator.async_set_updated_data(replace(coordinator.data, inventory=without_tv))
     await hass.async_block_till_done()
     assert hass.states.get(volume_up).state == STATE_UNAVAILABLE
+
+
+async def test_no_power_off_activity_button(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    fake_transport: FakeTransport,
+    entity_registry: er.EntityRegistry,
+) -> None:
+    """0.1.6 made an activity button for the Hub's PowerOff entry; the Power off button covers it."""
+    fake_transport.activities = (*fake_transport.activities, POWER_OFF_ACTIVITY)
+    mock_config_entry.add_to_hass(hass)
+    stale = entity_registry.async_get_or_create(
+        BUTTON_DOMAIN,
+        DOMAIN,
+        f"{HUB_ID}_activity_-1",
+        config_entry=mock_config_entry,
+        suggested_object_id="living_room_hub_start_poweroff",
+    )
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert entity_registry.async_get(stale.entity_id) is None
+    assert hass.states.get("button.living_room_hub_start_poweroff") is None
+    assert hass.states.get("button.living_room_hub_start_watch_tv") is not None

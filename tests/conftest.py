@@ -31,6 +31,8 @@ from homeassistant.core import HomeAssistant
 from .pyharmonyng.conftest import load_frames, load_json
 
 HUB_ID = "20140101120000-000001"
+# The Hub lists PowerOff with the activities, as the Logitech configuration does
+POWER_OFF_ACTIVITY = Activity(id="-1", name="PowerOff", type="", order=0)
 REMOTE_ID = "20141001120000-000002"
 HOST = "192.0.2.10"
 

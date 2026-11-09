@@ -17,7 +17,7 @@ from homeassistant.const import ATTR_ENTITY_ID, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
-from .conftest import FakeTransport
+from .conftest import POWER_OFF_ACTIVITY, FakeTransport
 from .pyharmonyng.conftest import load_frames
 
 ENTITY = "select.living_room_hub_activity"
@@ -62,3 +62,16 @@ async def test_select(
         blocking=True,
     )
     assert fake_transport.commands() == [("start_activity", ("123456",)), ("power_off", ())]
+
+
+async def test_hub_power_off_listed_once(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    """The Hub lists PowerOff with the activities; the select offers it once."""
+    fake_transport.activities = (*fake_transport.activities, POWER_OFF_ACTIVITY)
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    state = hass.states.get(ENTITY)
+    assert state.state == "PowerOff"
+    assert state.attributes["options"] == ["PowerOff", "Watch TV", "Listen to Music"]

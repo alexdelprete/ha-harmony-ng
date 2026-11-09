@@ -44,7 +44,7 @@
         'Listen to Music',
       ]),
       'activity_starting': False,
-      <RemoteEntityStateAttribute.CURRENT_ACTIVITY: 'current_activity'>: None,
+      <RemoteEntityStateAttribute.CURRENT_ACTIVITY: 'current_activity'>: 'PowerOff',
       'devices_list': list([
         'LG OLED TV',
         'Soundbar',
