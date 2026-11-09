@@ -77,6 +77,38 @@ def remote_device_name(rf: RfStatus, slot: int) -> str:
     return f"{base} {slot}" if shared else base
 
 
+def keep_known_products(old: RfStatus, new: RfStatus) -> RfStatus:
+    """Keep a remote's product while the Hub briefly does not know it.
+
+    Some firmware reports a remote's model as unknown after its RF service restarts,
+    until the remote itself reboots. A remote is the same product for its whole life
+    and another remote has another unit id, so what the Hub reported before for the
+    same unit id still holds.
+    """
+    slots: list[RfSlot] = []
+    kept = False
+    for slot in new.slots:
+        before = old.slot(slot.slot)
+        if (
+            slot.product_name is None
+            and slot.remote_id
+            and before is not None
+            and before.remote_id == slot.remote_id
+            and before.product_name is not None
+        ):
+            slot = replace(
+                slot,
+                model=before.model,
+                model_name=before.model_name,
+                skin=before.skin,
+                equad_id=before.equad_id,
+                has_screen=before.has_screen,
+            )
+            kept = True
+        slots.append(slot)
+    return replace(new, slots=tuple(slots)) if kept else new
+
+
 @dataclass(frozen=True, slots=True)
 class HubState:
     """Everything the entities read, replaced as a whole on every event."""
@@ -260,11 +292,21 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         )
         rf = state.rf if state else None
         product = rf_slot.product_name if rf_slot else None
+        name = remote_device_name(rf, slot) if rf else DEFAULT_REMOTE_NAME
+        if product is None and rf_slot is not None and rf_slot.remote_id:
+            # Set up while the Hub does not know the product (see keep_known_products):
+            # keep what the registry learnt before for this remote
+            known = dr.async_get(self.hass).async_get_device_by_identifier(
+                (DOMAIN, rf_slot.remote_id), self.config_entry.entry_id
+            )
+            if known is not None and known.model:
+                product = known.model
+                name = known.name or name
         return DeviceInfo(
             identifiers={(DOMAIN, self.remote_identifier(slot))},
             manufacturer=MANUFACTURER,
             model=product,
-            name=remote_device_name(rf, slot) if rf else DEFAULT_REMOTE_NAME,
+            name=name,
             serial_number=rf_slot.remote_id if rf_slot else None,
             sw_version=rf_slot.sw_version if rf_slot else None,
             via_device_id=hub.id if hub is not None else None,
@@ -355,6 +397,7 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         inventory = state.inventory if state else Inventory((), None)
         new_state = self._state_from_snapshot(snapshot, activities, inventory)
         if state is not None:
+            new_state = replace(new_state, rf=keep_known_products(state.rf, new_state.rf))
             self._migrate_remote_identities(state.rf, new_state.rf)
             self._refresh_remote_devices(state.rf, new_state.rf)
         self._async_refresh_issues(legacy_enabled=snapshot.hub.legacy_enabled)
@@ -414,7 +457,7 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         if isinstance(event, BtStatusEvent):
             return replace(state, bt=event.status, received_at=now)
         if isinstance(event, RfStatusEvent):
-            return replace(state, rf=event.status, received_at=now)
+            return replace(state, rf=keep_known_products(state.rf, event.status), received_at=now)
         if isinstance(event, ButtonEvent):
             return replace(state, last_button=event.button, received_at=now)
         if isinstance(event, IrCaptureEvent):

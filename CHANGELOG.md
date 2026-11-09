@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Remote model: after the Hub's RF service restarts, some firmware reports the remote's model
+  as unknown until the remote reboots, and the integration cleared the device's model (and its
+  default name). The model the Hub reported before for the same remote is now kept, also when
+  Home Assistant starts while the Hub does not know it yet. Another remote has another unit id
+  and does not inherit it.
+
 ## [0.1.5] - 2026-11-09
 
 ### Fixed
