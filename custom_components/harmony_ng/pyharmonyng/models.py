@@ -231,6 +231,9 @@ class ActivityState:
     state: ActivityStatus
     busy: bool
     sending: bool
+    # The request waiting behind the running transition ("-1" is power off); None when
+    # there is none or the firmware does not queue requests
+    queued: str | None = None
 
     @classmethod
     def from_json(cls, data: JsonDict) -> Self:
@@ -240,6 +243,7 @@ class ActivityState:
             state=ActivityStatus.from_code(_int(data, "state")),
             busy=_bool(data, "busy"),
             sending=_bool(data, "sending"),
+            queued=_opt_str(data, "queued"),
         )
 
     @property

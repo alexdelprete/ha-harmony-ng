@@ -94,6 +94,15 @@ def test_activity_state_from_rest_and_event() -> None:
     assert ActivityState.from_json({}).activity_id == POWER_OFF_ACTIVITY_ID
 
 
+def test_activity_state_queued() -> None:
+    """The request waiting behind the running transition; absent on older firmware."""
+    frame = load_frames("ws_activity_switch")[0]
+    assert ActivityState.from_json(frame).queued is None
+    assert ActivityState.from_json({**frame, "queued": None}).queued is None
+    assert ActivityState.from_json({**frame, "queued": "-1"}).queued == POWER_OFF_ACTIVITY_ID
+    assert ActivityState.from_json({**frame, "queued": "234567"}).queued == "234567"
+
+
 def test_activity_progress() -> None:
     progress = ActivityProgress.from_json(load_frames("ws_activity_switch")[1])
     assert progress == ActivityProgress(

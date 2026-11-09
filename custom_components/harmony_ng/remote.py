@@ -40,11 +40,12 @@ from .const import (
 from .coordinator import HarmonyNgCoordinator
 from .entity import HarmonyNgEntity, async_add_dynamic_entities
 from .helpers import hub_call, resolve_activity, resolve_command, resolve_device
-from .pyharmonyng import ActivityStatus, CommandAction, Device
+from .pyharmonyng import POWER_OFF_ACTIVITY_ID, ActivityStatus, CommandAction, Device
 from .transport import HarmonyNgTransport
 
 ATTR_LAST_ACTIVITY = "last_activity"
 ATTR_ACTIVITY_STARTING = "activity_starting"
+ATTR_ACTIVITY_QUEUED = "activity_queued"
 ATTR_DEVICES_LIST = "devices_list"
 ATTR_COMMANDS = "commands"
 
@@ -147,8 +148,19 @@ class HarmonyNgRemote(HarmonyNgEntity, RemoteEntity):
                 state.activity_name(state.last_activity_id) if state.last_activity_id else None
             ),
             ATTR_ACTIVITY_STARTING: state.activity.state is ActivityStatus.STARTING,
+            ATTR_ACTIVITY_QUEUED: self._queued_activity(),
             ATTR_DEVICES_LIST: [device.name for device in state.inventory.devices],
         }
+
+    def _queued_activity(self) -> str | None:
+        """Return the activity the Hub starts when the running transition completes."""
+        state = self.state_data
+        queued = state.activity.queued
+        if queued is None:
+            return None
+        if queued == POWER_OFF_ACTIVITY_ID:
+            return POWER_OFF_LABEL
+        return state.activity_name(queued) or queued
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Start the given activity, else the default one from the options."""

@@ -7,14 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The Hub's remote has an `activity_queued` attribute: the activity the Hub starts when the
+  running activity change completes (`PowerOff` for a power off), null when none. It needs
+  firmware with the activity request queue (harmony-ng pull request 105) and is always null on
+  older firmware.
+
 ### Changed
 
-- Activity requests during a switch: firmware with the activity request queue (harmony-ng pull request 105)
-  no longer refuses an activity start or power off while the Hub switches activities. It answers
-  "queued" and runs the latest request when the switch completes. The integration already takes
-  that reply as a success on the API and MQTT transports, now covered by tests; firmware without
-  the queue still refuses as busy. The README and the integration specification describe it, and
-  the repository's copy of the firmware specification has the upstream status of every milestone.
+- Activity requests during a switch: firmware with the activity request queue no longer refuses
+  an activity start or power off while the Hub switches activities. It answers "queued" and runs
+  the latest request when the switch completes. The integration already takes that reply as a
+  success on the API and MQTT transports, now covered by tests; firmware without the queue still
+  refuses as busy. The README and the integration specification describe it, and the
+  repository's copy of the firmware specification follows the firmware's.
+- The client library is tested against the firmware's payloads recorded with the request queue.
 
 ## [0.1.8] - 2026-11-09
 
