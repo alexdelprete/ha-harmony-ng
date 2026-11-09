@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-11-09
+
 ### Fixed
 
 - PowerOff listed twice: the Hub lists PowerOff with the activities, so the activity select
