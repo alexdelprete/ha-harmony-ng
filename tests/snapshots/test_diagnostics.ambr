@@ -51,6 +51,7 @@
       'activity': dict({
         'activity_id': '-1',
         'busy': False,
+        'queued': None,
         'sending': False,
         'state': <ActivityStatus.IDLE: 'idle'>,
       }),

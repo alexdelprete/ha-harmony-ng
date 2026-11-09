@@ -17,12 +17,13 @@ says so ("As built"); section 9 lists what was added beyond it.
 | --- | --- | --- |
 | Milestone 1 (3.1-3.13) | #97 (A1) | merged |
 | 3.14 one-shot capture (`POST /api/capture`) | #98 | merged |
-| 3.14 capture mode, capture state and event | A4 | not posted yet |
-| Milestones 2 and 3 (mDNS, MQTT v2) | #99 (A2) | open |
-| Milestone 4 (Logitech shim, SSDP) | A3 | not posted yet (after #99) |
-| Section 9 additions | A4, #101 | A4 not posted yet; #101 open |
+| 3.14 capture mode, capture state and event | #104 (A4) | merged |
+| Milestones 2 and 3 (mDNS, MQTT v2) | #99 (A2) | merged |
+| Milestone 4 (Logitech shim, SSDP) | #103 (A3) | merged |
+| Section 9 additions | #104 (A4), #101 | merged |
+| Activity requests queued during a transition (follow-up) | #105 | open |
 
-The development Hub and remote run all of it (upstream main plus #99, A3, A4 and #101).
+Everything above except #105 is in upstream main as of 2026-11-09. The development Hub and remote run main plus #105.
 
 ## 0. How to use this document
 
@@ -180,8 +181,11 @@ and working on this firmware, independent of settings. Flags introduced by this 
 - Every pushed message and every retained MQTT state payload carries `"type"`, as the existing
   WebSocket messages do.
 - Request errors use the existing shapes: HTTP 400 with `{"ok":false,"error":"..."}` for bad input,
-  401 when auth is required and missing, 409 with `{"ok":false,"error":"busy"}` when the orchestrator
-  holds the interlock, 503 when a client limit is reached.
+  401 when auth is required and missing, 409 with `{"ok":false,"error":"busy"}` when an update check
+  is already running, 503 when a client limit is reached. An activity start or power off asked while
+  the orchestrator holds the interlock is not refused: since #105 it is queued and answered
+  `200` with `"state":"queued"` (one slot, the latest request wins, a request for the running
+  transition's own target drops the queue); only an unknown activity id is an error (500).
 - New endpoints accept JSON bodies only, `Content-Type: application/json`, and answer JSON.
 
 ### 2.4 Settings
@@ -280,12 +284,15 @@ existing `get_state` reply so that both are parsed by one routine:
 
 ```json
 {"type":"activity_state","activity":"123456","state":2,"stateName":"running",
- "busy":false,"sending":true,"seq":17,"ts":1762387200}
+ "busy":false,"sending":true,"queued":null,"seq":17,"ts":1762387200}
 ```
 
 `state` keeps the numeric enum used by the web UIs, `stateName` is the lowercase name, `busy` and
 `sending` as in `GET /api/activity`. `activity` is `"-1"` when idle. Also emit once at daemon start
-after `orch_init()`, so sinks have a baseline.
+after `orch_init()`, so sinks have a baseline. `queued` (#105) is the id of the request waiting
+behind the running transition, `null` when none; the event is also emitted when only the queue
+changes (a request queued or replaced while `busy`, the queue emptied), so a client can show the
+pending activity without polling `GET /api/activity`.
 
 `on_orch_progress` in `hub_ws.c` stops broadcasting itself; it emits `HUB_EV_ACTIVITY_PROGRESS` with
 the existing `activity_progress` payload, and the WebSocket sink (3.7) sends it. MQTT keeps
@@ -756,8 +763,9 @@ the WebSocket actions exactly: `start_activity` (`activity`), `stop_activity`, `
 Reply on `<base>/cmd/response`:
 
 ```json
-{"type":"cmd_response","id":"c7d1","action":"start_activity","ok":true}
-{"type":"cmd_response","id":"c7d1","action":"start_activity","ok":false,"code":409,"error":"busy"}
+{"type":"cmd_response","id":"c7d1","action":"start_activity","ok":true,"state":"starting"}
+{"type":"cmd_response","id":"c7d2","action":"start_activity","ok":true,"state":"queued"}
+{"type":"cmd_response","id":"c7d3","action":"start_activity","ok":false,"code":500,"error":"could not build the transition"}
 ```
 
 Codes and errors equal the REST ones. A request without `id` is executed and not answered. Malformed
@@ -820,12 +828,14 @@ specified; the per-remote topic settings are removed.
 
 ### 5.7 Tests
 
+<!-- pyml disable md013 -->
 - `tests/test_mqtt_v2.py`: start a small broker on the devbox (`mosquitto` or the Python `amqtt`
   package in the test venv), point the harness at it, and check: retained topics after connect;
   `activity` republished on a dry-run activity start; `inventory/index` and chunks match the sample
   config and change `inventory_version` when a device file is touched; a `cmd` request gets a
-  `cmd_response` with the same `id`; a busy start gets 409; `ir/raw` reaches the recorded encoder
+  `cmd_response` with the same `id`; a start during a transition is acknowledged with `state` `queued` (#105); `ir/raw` reaches the recorded encoder
   call; the discovery clear publishes empty payloads to the listed topics once.
+<!-- pyml enable md013 -->
 - `tests/test_mqtt_packets.c` if the chunking logic is non-trivial.
 - Hub verification: subscribe with `mosquitto_sub -v -t 'harmony/#'` from the devbox through the
   owner's broker; drive an activity from the remote; confirm the old discovery entities disappear
@@ -1003,8 +1013,9 @@ Sequencing for one `runactivity` request with id M, driven by a bus sink in `hbu
 remembers the pending request id per legacy client:
 
 1. Immediately: `{"cmd":"harmony.activityengine?runactivity","id":M,"code":200,"msg":"OK","data":{}}`.
-   If the orchestrator refuses (busy, unknown activity): `code` 500, `msg` "Busy" or "Unknown
-   activity", and nothing else.
+   If the activity id is unknown: `code` 500, `msg` "Unknown activity", and nothing else. A request
+   made while a transition runs is acknowledged the same way and queued (#105); its frames below
+   follow when it starts.
 2. On the `activity_state` event `STARTING` (or `STOPPING` for power off): notify
    `{"type":"connect.stateDigest?notify","data":{digest with activityStatus 1 and the target
    activityId}}` to every legacy client (for power off: `activityStatus` 0, `activityId` `"-1"`).

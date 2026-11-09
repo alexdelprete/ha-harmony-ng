@@ -3,9 +3,8 @@
 The files under fixtures/firmware are copied unchanged from the harmony-ng
 firmware's tests/fixtures/ha, which the firmware builds with its real writers
 (the RF status builder, hub_btstack's status file, a real infrared capture), at
-branch hub/published-ir (8924294), whose fixtures equal the prepared upstream chain.
-mqtt_retained.json comes from branch feat/ha-rf-remote-fixes (A4, 9104db1), the first
-whose retained hub object carries the Home Assistant discovery setting.
+branch fix/activity-request-queue (#105, 6c480ce), upstream main plus the activity
+request queue, whose activity_state carries the queued request.
 The other fixtures are shaped for the integration tests; these keep the parsing
 honest about the key names the firmware really uses.
 """
@@ -46,7 +45,7 @@ def test_status() -> None:
     status = HubStatus.from_json(load_json(FIRMWARE + "status"))
     assert status.hub_id == "20140101120000-000001"
     assert status.api_version >= 2
-    assert status.boot_time == datetime.fromtimestamp(1794026082, tz=UTC)
+    assert status.boot_time == datetime.fromtimestamp(1794174077, tz=UTC)
     assert status.has(CAP_IR_CAPTURE)
     # Off after every Hub start: the receiver entity turns it on again
     assert status.ir_capture is False
@@ -106,6 +105,9 @@ def test_snapshot() -> None:
     assert snapshot.hub.ir_capture_error is None
     # Over WebSocket the discovery setting comes with the MQTT client status
     assert snapshot.hub.ha_discovery is True
+    # Firmware with the activity request queue names the waiting request, null when none
+    assert load_json(FIRMWARE + "snapshot")["activity_state"]["queued"] is None
+    assert snapshot.activity_state.queued is None
 
 
 def test_mqtt_retained() -> None:
@@ -120,6 +122,7 @@ def test_mqtt_retained() -> None:
     assert sorted(d.type for d in devices) == ["MediaPlayer", "Television"]
     assert all(d.commands for d in devices)
     assert _hosts(BtStatus.from_json(retained["harmony/hub/bt"])) == HOSTS
+    assert retained["harmony/hub/activity_state"]["queued"] is None
     rf = RfStatus.from_json(retained["harmony/hub/rf"])
     assert rf.slot(1) is not None
     hub = HubStatus.from_json(retained["harmony/hub/hub"])

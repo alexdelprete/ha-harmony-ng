@@ -43,6 +43,7 @@
         'Watch TV',
         'Listen to Music',
       ]),
+      'activity_queued': None,
       'activity_starting': False,
       <RemoteEntityStateAttribute.CURRENT_ACTIVITY: 'current_activity'>: 'PowerOff',
       'devices_list': list([

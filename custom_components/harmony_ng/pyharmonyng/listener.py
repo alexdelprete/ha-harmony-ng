@@ -163,7 +163,8 @@ class HarmonyNgListener:
 
         Raises:
             HarmonyNgConnectionError: the socket is down or the reply never came.
-            HarmonyNgBusyError: the Hub refused because the orchestrator is busy.
+            HarmonyNgBusyError: the Hub refused because the orchestrator is busy
+                (an activity change on firmware without the request queue).
             HarmonyNgApiError: the Hub refused for another reason.
         """
         ws = self._ws

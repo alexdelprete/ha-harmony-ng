@@ -101,6 +101,13 @@ class HarmonyNgClient:
   or `403` becomes `HarmonyNgAuthError`. Connection and timeout errors become
   `HarmonyNgConnectionError`. Any other non-2xx, or a 2xx body whose `ok` or `success` is false,
   becomes `HarmonyNgApiError` with the Hub's `error` string and the status code.
+- **As built**: firmware with the activity request queue (harmony-ng PR #105) no longer refuses an activity start or
+  power off during a transition. REST answers 200 with `state` `queued`, and the WebSocket and MQTT acknowledgements
+  carry the same `state`; the Hub runs the latest request when the transition completes. The library treats it as
+  any success. The waiting request is `queued` in `GET /api/activity`, the `activity_state` event (sent also when
+  only the queue changes), the snapshot and the retained MQTT `activity_state`: the id, `-1` for power off, `null`
+  when none. `ActivityState.queued` holds it (`None` also on firmware without the queue), and the Hub's remote shows
+  it as `activity_queued` (2.7). Firmware without the queue still answers `409`, which stays `HarmonyNgBusyError`.
 - `get_status` raises `HarmonyNgUnsupportedError` when the reply has no `hub_id` or an `api_version`
   below `MIN_API_VERSION` (firmware before milestone 1) and exposes `HubStatus.capabilities` as a
   frozenset of strings.
@@ -406,7 +413,7 @@ the address lowercased and colons removed.
 
 | Platform | Key | Owner | Category | Device class / options | Value and attributes | Availability beyond connected |
 | --- | --- | --- | --- | --- | --- | --- |
-| remote | `remote` (name None) | Hub | none | `RemoteEntityFeature.ACTIVITY` | `is_on` = activity not `-1`; attributes `current_activity` (name; `PowerOff` while off, as core), `activity_list` (without PowerOff), `last_activity`, `activity_starting`, `devices_list`; `turn_on` with `activity` by name or id, else the default activity; `turn_off` = power off; `send_command` runs each command as press, hold `hold_secs`, release, `num_repeats` times, `delay_secs` between | always |
+| remote | `remote` (name None) | Hub | none | `RemoteEntityFeature.ACTIVITY` | `is_on` = activity not `-1`; attributes `current_activity` (name; `PowerOff` while off, as core), `activity_list` (without PowerOff), `last_activity`, `activity_starting`, `activity_queued` (as built: the activity the Hub starts when the running transition completes, `PowerOff` for a power off, null when none), `devices_list`; `turn_on` with `activity` by name or id, else the default activity; `turn_off` = power off; `send_command` runs each command as press, hold `hold_secs`, release, `num_repeats` times, `delay_secs` between | always |
 | select | `activity` | Hub | none | options `PowerOff` plus activity names, as core (the Hub's own PowerOff entry left out) | current activity; selecting `PowerOff` powers off | always |
 | sensor | `activity_state` | Hub | diagnostic | enum `idle`, `starting`, `running`, `stopping` | `ActivityState.state` | always |
 | sensor | `firmware` | Hub | diagnostic | none | `version` | always |

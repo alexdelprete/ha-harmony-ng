@@ -30,7 +30,9 @@ no longer speak the Logitech protocol.
 
 - One `remote` entity per Hub with the attributes and services of the core Harmony integration, so
   existing automations port with a change of entity id: `remote.turn_on` with an activity,
-  `remote.turn_off`, `remote.send_command` with device, repeats, delay and hold.
+  `remote.turn_off`, `remote.send_command` with device, repeats, delay and hold. Its
+  `activity_queued` attribute names the activity the Hub starts next when one was asked for
+  during an activity change.
 - Activity select and one button per activity, activity state, firmware and last-boot sensors,
   a busy indicator.
 - Each configured device is a child device of the Hub with its own `remote` entity and one button
@@ -179,7 +181,9 @@ which it does with increasing delays up to 30 seconds.
   core Harmony integration can also see it and would create duplicate entities. Disable the
   setting on the Hub or remove the core integration's entry for this Hub.
 - **Commands refused as busy**: the Hub is switching activities; wait for it to finish or use
-  `harmony_ng.activity_cancel` if it is stuck.
+  `harmony_ng.activity_cancel` if it is stuck. Firmware with the activity request queue does not
+  refuse an activity start or power off during a switch: it runs the latest one when the switch
+  completes, and the remote's `activity_queued` attribute shows it until then.
 
 ## Removal
 

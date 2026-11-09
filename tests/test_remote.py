@@ -65,6 +65,23 @@ async def test_entity(
     await snapshot_platform(hass, entity_registry, snapshot, init_integration.entry_id)
 
 
+async def test_queued_activity(
+    hass: HomeAssistant, init_integration: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    """The request the Hub runs when the running transition completes."""
+    assert hass.states.get(ENTITY).attributes["activity_queued"] is None
+    starting = {"type": "activity_state", "ts": 0, "activity": "123456", "state": 1, "busy": True}
+    fake_transport.push({**starting, "seq": 60, "queued": "234567"})
+    assert hass.states.get(ENTITY).attributes["activity_queued"] == "Listen to Music"
+    fake_transport.push({**starting, "seq": 61, "queued": "-1"})
+    assert hass.states.get(ENTITY).attributes["activity_queued"] == POWER_OFF_ACTIVITY.name
+    # An id the inventory does not know yet is shown as is
+    fake_transport.push({**starting, "seq": 62, "queued": "999"})
+    assert hass.states.get(ENTITY).attributes["activity_queued"] == "999"
+    fake_transport.push({**starting, "seq": 63, "state": 3, "activity": "-1", "queued": None})
+    assert hass.states.get(ENTITY).attributes["activity_queued"] is None
+
+
 async def test_turn_on_and_off(
     hass: HomeAssistant, init_integration: MockConfigEntry, fake_transport: FakeTransport
 ) -> None:

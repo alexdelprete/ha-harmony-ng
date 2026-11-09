@@ -247,6 +247,7 @@ async def test_ack_errors(
     started: tuple[HarmonyNgListener, Recorder, Snapshot], hub: FakeHub
 ) -> None:
     listener, _, _ = started
+    # Firmware before the request queue refuses a start during a transition
     hub.ack_error = "Interlock busy"
     with pytest.raises(HarmonyNgBusyError, match="Interlock busy"):
         await listener.start_activity("123456")
@@ -256,6 +257,17 @@ async def test_ack_errors(
     hub.ack_error = ""
     with pytest.raises(HarmonyNgApiError, match="refused"):
         await listener.send_command("x", "y")
+
+
+async def test_queued_ack(
+    started: tuple[HarmonyNgListener, Recorder, Snapshot], hub: FakeHub
+) -> None:
+    """A request queued behind a running transition is acknowledged as a success."""
+    listener, _, _ = started
+    hub.ack_fields = {"state": "queued"}
+    await listener.start_activity("123456")
+    await listener.power_off()
+    assert [a["action"] for a in hub.actions[-2:]] == ["start_activity", "stop_activity"]
 
 
 async def test_missing_ack(hub: FakeHub, session: aiohttp.ClientSession) -> None:
