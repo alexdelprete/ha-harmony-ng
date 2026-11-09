@@ -2,7 +2,9 @@
 
 # Harmony NG Integration Architecture
 
-Design document for the Harmony NG custom integration. Last updated 2026-11-06.
+Design document for the Harmony NG custom integration. Last updated 2026-11-09.
+
+Written 2026-11-06. The section "As built" records where the implementation differs from the design.
 
 The Hub's native API, REST plus one WebSocket, is the primary layer. MQTT through Home Assistant's MQTT integration is
 the second full layer. The Logitech protocol on port 8088 is a firmware-only option for the core Harmony integration.
@@ -32,7 +34,8 @@ space.
 <!-- pyml enable md013 -->
 
 Decisions already taken: API is primary and default; MQTT is a first-class alternative consumed through Home Assistant's
-MQTT integration; the Hub's own MQTT discovery entities are removed in the MQTT rewrite; the legacy shim is in the first
+MQTT integration; the Hub's own MQTT discovery entities are removed in the MQTT rewrite (as built they are kept, see
+As built); the legacy shim is in the first
 firmware milestone; the firmware's three transports are independent toggles while the integration uses one transport per
 config entry; entity identity never encodes the transport, so the transport can be changed in place without losing
 entities.
@@ -324,9 +327,9 @@ identical registry entries and switching between them changes nothing in the ent
 | select | Activity | activity state, inventory | Hub | none | options PowerOff plus activity names, same as core |
 | sensor | Activity state | orchestrator state | Hub | diagnostic | enum: idle, starting, running, stopping |
 | sensor | Firmware | status | Hub | diagnostic | harmony-ng version string |
-| sensor | Uptime | status | Hub | diagnostic, disabled by default | timestamp device class |
+| sensor | Uptime, named Last boot | status | Hub | diagnostic, disabled by default | timestamp device class; the Hub's boot_time as built |
 | sensor | Battery | rf_status | Remote slot | diagnostic | device class battery, percent |
-| sensor | Battery voltage | rf_status | Remote slot | diagnostic, disabled by default | voltage device class, millivolts |
+| sensor | Battery voltage | rf_status | Remote slot | diagnostic, disabled by default | voltage device class, millivolts, shown in volts as built |
 | binary_sensor | Charging | rf_status | Remote slot | diagnostic | device class battery_charging |
 | binary_sensor | Config in sync | rf_status | Remote slot | diagnostic | problem device class, inverted |
 | binary_sensor | Hub busy | activity state | Hub | diagnostic | running device class |
@@ -447,7 +450,7 @@ it can be tested end to end. The scaffolding update is independent and lands fir
 | Primary layer | API, default in the config flow |
 | Second full layer | MQTT through Home Assistant's MQTT integration: the Hub publishes to the broker, the integration subscribes |
 | Legacy protocol | Firmware-only setting, off by default, in milestone 1; the core integration is the client |
-| Hub MQTT discovery entities | Removed in the MQTT rewrite, with a release note |
+| Hub MQTT discovery entities | Removed in the MQTT rewrite, with a release note. As built: kept at the upstream maintainer's request |
 | Discovery | mDNS only; the transport is chosen in the flow, never implied by how the Hub was found |
 | Firmware transports | Independent toggles; WebSocket always on for the web UI |
 | Integration transports | One per config entry |
@@ -456,6 +459,45 @@ it can be tested end to end. The scaffolding update is independent and lands fir
 
 Open questions: whether configured IR and BT devices become child devices in the first release or later. The PyPI name
 pyharmonyng was free on 2026-11-06.
+
+## As built
+
+Status on 2026-11-09, with integration release 0.1.7 and firmware specification 1.1. The firmware specification's
+status table says which firmware parts are merged upstream, open or not posted yet.
+
+**Infrared capture.** The capture state is part of the Hub's status fields, so it is in the snapshot's hub object and
+in MQTT `<base>/hub`: `ir_capture`, plus `ir_capture_error` only while the receiver has a problem. Every change is
+pushed as a WebSocket event `{"type":"ir_capture","ir_capture":true}` and republishes `<base>/hub`. The mode is off
+after every Hub start, so the receiver entity turns it on again after each reconnect and retries a failed start every
+30 s while the Hub does not report it on.
+
+**MQTT commands.** Request ids are strings; the Hub executes a request with a numeric id and does not answer it. The
+Hub subscribes to `<base>/cmd` at QoS 1 before it publishes `online` (firmware PR #99), so a command sent the moment
+`online` arrives is answered. The capture retry exists for firmware before that fix, where `online` went out first
+and such a command could be lost.
+
+**Remote model.** Each RF slot carries `model`, `model_name` (null while unknown), `skin` and `equad_id`; the product
+comes from the remote's skin id. Firmware with the A4 fix keeps the skin when a config push rewrites the Hub's
+version file, so the model survives a `hub_rf` restart. On firmware without it the model is unknown after such a
+restart until the remote reboots, and the integration keeps the last known model per remote id.
+
+**Boot time.** The status fields carry `boot_time` (Unix time, null until the Hub's clock is set). The Last boot
+sensor uses it; only firmware without it falls back to the snapshot time minus `uptime_sec`.
+
+**Battery.** Each slot's battery object carries `reported_at` (Unix time or null) and `restored` (true for a report
+`hub_rf` restored after a restart). The integration shows the time of the last report as a sensor.
+
+**Hub MQTT discovery.** The firmware keeps Home Assistant MQTT discovery, rebuilt on the v2 topics with the same object
+ids, instead of removing it. Both sets of entities can exist when a user enables discovery on the Hub and also sets up
+this integration. The repair for orphaned discovery entities still assumes removal and needs revising.
+
+**Activities.** The Hub lists PowerOff (id -1) with the activities; the integration leaves it out of the activity
+list, as the core integration does. The select still offers PowerOff and the remote reports it as the current
+activity while off.
+
+**Bluetooth.** After a `hub_btstack` restart every host that was connected comes back, the activity's host first
+(firmware PR #101). Since upstream 506794a power-off no longer disconnects the hosts and nothing reconnects while the
+activity is off, so the connectivity sensors can show hosts connected for a while after power-off.
 
 ## Sources
 

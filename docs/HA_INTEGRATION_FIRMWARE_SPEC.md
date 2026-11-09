@@ -3,10 +3,26 @@
 
 # Firmware specification for the Harmony NG Home Assistant integration
 
-Version 1.0, 2026-11-06. Companion to the integration's architecture document
+Version 1.1, 2026-11-09 (1.0: 2026-11-06). Companion to the integration's architecture document
 (`docs/HA_INTEGRATION_ARCHITECTURE.md` in the ha-harmony-ng repository), which holds the reasoning and the
 measurements. This document holds only what the firmware must do, item by item, so that an
 implementer can work through it without the design discussion.
+
+Version 1.1 records what was built. Where the implementation differs from version 1.0 the text
+says so ("As built"); section 9 lists what was added beyond it.
+
+**Status** (upstream `iranl/harmony-ng`, 2026-11-09):
+
+| Part | Upstream PR | State |
+| --- | --- | --- |
+| Milestone 1 (3.1-3.13) | #97 (A1) | merged |
+| 3.14 one-shot capture (`POST /api/capture`) | #98 | merged |
+| 3.14 capture mode, capture state and event | A4 | not posted yet |
+| Milestones 2 and 3 (mDNS, MQTT v2) | #99 (A2) | open |
+| Milestone 4 (Logitech shim, SSDP) | A3 | not posted yet (after #99) |
+| Section 9 additions | A4, #101 | A4 not posted yet; #101 open |
+
+The development Hub and remote run all of it (upstream main plus #99, A3, A4 and #101).
 
 ## 0. How to use this document
 
@@ -17,6 +33,10 @@ implementer can work through it without the design discussion.
   the fork's `main` by the author. Nothing goes to the upstream repository until the whole spec and
   the Home Assistant integration work together; at that point the four PRs are opened upstream
   as they are, in order.
+- **As built**: the milestones were tested on the Hub as stacked fork branches and then went
+  upstream directly as four stacked PRs, each opened after the previous one merged: A1 (milestone
+  1, #97), A2 (milestones 2 and 3, #99), A3 (milestone 4) and A4 (the RF and remote fixes of section
+  9 and the 3.14 capture mode). IR learning (the one-shot capture of 3.14) went up on its own as #98.
 - Inside a milestone, commit per numbered item (`feat(events): ...`, `feat(ws): ...`), in the
   order given, so the PR reads as a sequence of small reviewable steps. Conventional commit style
   as in the repository history.
@@ -62,6 +82,7 @@ implementer can work through it without the design discussion.
   `capabilities` instead.
 - Existing endpoints and WebSocket messages keep their shape. New fields are added, nothing is
   renamed or removed, with the one exception called out in milestone 3 (MQTT discovery entities).
+  **As built**: no exception; the discovery entities are kept (5.4).
 
 ## 1. What the integration consumes
 
@@ -70,7 +91,6 @@ the same information on both. This table is the contract. Everything in it is sp
 the milestones.
 
 <!-- pyml disable md013 -->
-
 | Need | API transport | MQTT transport | Milestone |
 | --- | --- | --- | --- |
 | Identity, version, capabilities | `GET /api/status` fields `hub_id`, `version`, `api_version`, `capabilities` | retained `<base>/hub` | 1, 3 |
@@ -90,7 +110,6 @@ the milestones.
 | Liveness | server WebSocket ping every 30 s | LWT on `<base>/status` (exists) | 1 |
 | Discovery | mDNS `_harmony-ng._tcp` with TXT record | same record | 2 |
 | Core Harmony integration on the same Hub | Logitech protocol on port 8088, off by default, plus SSDP | not applicable | 4 |
-
 <!-- pyml enable md013 -->
 
 ## 2. Conventions used by every item
@@ -141,7 +160,6 @@ for this hardware id; the Logitech cloud account number that the legacy protocol
 and working on this firmware, independent of settings. Flags introduced by this document:
 
 <!-- pyml disable md013 -->
-
 | Flag | Meaning | Milestone |
 | --- | --- | --- |
 | `events` | The event bus exists; `activity_state`, `config_changed`, `bt_status`, `rf_status` and `button` events are pushed over the WebSocket | 1 |
@@ -154,7 +172,6 @@ and working on this firmware, independent of settings. Flags introduced by this 
 | `mdns` | The mDNS responder is compiled in | 2 |
 | `mqtt_v2` | The MQTT layer publishes the retained state topics and the command channel of milestone 3 | 3 |
 | `legacy` | The Logitech protocol shim is compiled in; whether it is enabled is a setting | 4 |
-
 <!-- pyml enable md013 -->
 
 ### 2.3 JSON and errors
@@ -172,14 +189,10 @@ and working on this firmware, independent of settings. Flags introduced by this 
 New settings live in `/data/harmony/config/settings.json` through `config_store`, appear in
 `GET /api/settings` and are accepted by `POST /api/settings`, with defaults when absent:
 
-<!-- pyml disable md013 -->
-
 | Key | Type | Default | Milestone |
 | --- | --- | --- | --- |
 | `mdns_enabled` | bool | true | 2 |
 | `legacy_enabled` | bool | false | 4 |
-
-<!-- pyml enable md013 -->
 
 Changing a setting takes effect without a restart.
 
@@ -355,6 +368,11 @@ Tests: `tests/test_ws_events.py`: post a status object to `/api/rf/status-change
 changed, expect a second. The co-simulation test (`tests/test_co_simulation.py`) covers the real
 `hub_rf` push through the mock radio.
 
+**As built**: `hub_rf`'s `http_request_local()` built the request in a 1 KB buffer and wrote the
+untruncated length; the status object is 1.1 to 3 KB, so every push arrived cut and got `400`.
+Fixed in A4 (headers and body written separately, a rejected push logged once and retried);
+`tests/test_rf_status_push.py` drives the real client.
+
 ### 3.6 Hub identity, version and capabilities in status
 
 `GET /api/status` gains:
@@ -369,6 +387,10 @@ changed, expect a second. The co-simulation test (`tests/test_co_simulation.py`)
 `HARMONY_VERSION` and `HARMONY_COMMIT`, as in `/api/system-info`. `legacy_enabled` and
 `mdns_enabled` mirror the settings and are `false` until the milestones that add them. The same
 object, minus the memory and MQTT fields, is the `hub` member of the snapshot (3.9).
+
+**As built** (A4): the status fields also carry `boot_time` (Unix time, `null` until the clock is
+set; 9.3), `ir_capture` (bool) and `ir_capture_error` (only while the receiver has a problem; 3.14).
+They are in `GET /api/status`, in the snapshot's `hub` object and in MQTT `<base>/hub`.
 
 Tests: `tests/test_status.py`: fields present, `hub_id` equals the unit id of the synthetic mfg
 blob the harness was started with, capability list contains the milestone 1 flags.
@@ -525,6 +547,11 @@ sends `RF_MSG_UNIT_ID`, the status shows `remote_id`, a second report with the s
 no push, unpairing clears it. Hub verification: after deploying both bundles, `/api/rf/status`
 shows the remote's unit id within a minute of the remote waking; it survives a Hub restart.
 
+**As built** (A4): the same message carries the remote's skin id in its last byte, which gives
+the product model (9.2). A config push used to rewrite `remote_slot<N>_version.json` without
+`remote_id` and `skin`, so after a `hub_rf` restart both were unknown until the remote's next
+boot; the push now keeps them.
+
 ### 3.14 Infrared capture
 
 `ir_i2s_capture()` in `ir_i2s.c` already records one signal into a timing string but nothing
@@ -559,6 +586,33 @@ Tests: `tests/test_ir_capture.c` for the string parser with a recorded capture; 
 `ir_received` frame and that the status reflects the toggle. Hub verification: enable capture,
 point a remote at the Hub, see the event with a plausible carrier and timings, then send the same
 timings back through `ir-raw` and see the device react.
+
+**As built**:
+
+- In two parts. #98 (merged) added IR learning: the one-shot `POST /api/capture` (one frame as a
+  Harmony raw string, timeout 1 to 30 s) and the decoder written from hardware measurements
+  (1 bit per 1.5 us, fixed 768-byte DMA buffers, a stalled receive DMA ends the capture after 2 s).
+  A4 adds the capture mode of this item. The one-shot capture answers `409` while the mode is on,
+  and the mode `409` while a one-shot capture runs.
+- Sends do not pause the capture: transmit and receive can be open together (measured). Every send
+  marks itself active; the capture thread drops what it reads during the send and 100 ms after it
+  (the receiver sees the Hub's own blaster), then sets its clock again (a send reprograms the
+  shared I2S clock). A press in that window is lost.
+- A held button gives one event: after a signal the thread waits until the line has been dark for
+  150 ms.
+- The state is pushed: every change (on, off, error set or cleared, whoever made it) is a WebSocket
+  event and republishes MQTT `<base>/hub`:
+
+  ```json
+  {"type":"ir_capture","seq":58,"ts":1762387260,"ir_capture":true}
+  ```
+
+  `ir_capture_error` is present (in the event and in the status fields) only while the receiver
+  has a problem; its absence means none. The mode is off after every Hub start, so a client that
+  wants it turns it on after each reconnect.
+- Hub verification done 2026-11-08: 27 presses gave 27 events (26 matching the stored codes, one
+  partial frame), a captured Volume Up sent back through `ir-raw` turned the soundbar up, three
+  sends while capturing gave no event, and an hour with capture on had no error.
 
 ### 3.15 Hub verification for milestone 1
 
@@ -623,6 +677,11 @@ a timer, acknowledges commands, and no longer creates Home Assistant discovery e
 to 1200 lines, replacing most of `hub_mqtt.c` and all of `hub_mqtt_ha.c` (together about 1540 lines
 today), so the net size is flat or smaller.
 
+**As built** (#99): the upstream maintainer asked to keep Home Assistant MQTT discovery, so
+`hub_mqtt_ha.c` stays, rebuilt on the v2 topics with the same object ids (existing entities keep
+working). The old command topics stay as aliases and MQTT-type devices keep their pulse topic.
+5.3, 5.4 and 5.6 below are corrected accordingly.
+
 The transport (`mqtt_client.c`), the settings endpoint `POST /api/mqtt-save`, the 4 KB packet buffer,
 the reconnect backoff and the LWT on `<base>/status` stay.
 
@@ -632,11 +691,10 @@ the reconnect backoff and the LWT on `<base>/status` stay.
 `type`, `seq` and `ts` as on the WebSocket.
 
 <!-- pyml disable md013 -->
-
 | Topic | Retained | QoS | Payload |
 | --- | --- | --- | --- |
 | `<base>/status` | yes | 1 | `online` / `offline` (LWT), unchanged |
-| `<base>/hub` | yes | 1 | the `hub` object of the snapshot (3.9) |
+| `<base>/hub` | yes | 1 | the `hub` object of the snapshot (3.9); as built also `ip`, `device_count`, `command_count`, `boot_time`, `ir_capture` |
 | `<base>/activity_state` | yes | 1 | `activity_state` payload |
 | `<base>/progress` | no | 0 | `activity_progress` payload |
 | `<base>/bt` | yes | 1 | `bt_status` payload |
@@ -649,7 +707,6 @@ the reconnect backoff and the LWT on `<base>/status` stay.
 | `<base>/cmd/response` | no | 1 | command reply, see 5.3 |
 | `<base>/ir/raw` | subscribed | 1 | same body as `POST /api/ir-raw`, optional `id` for a reply on `cmd/response` |
 | `<base>/ir/received` | no | 0 | `ir_received` payload while capture is enabled |
-
 <!-- pyml enable md013 -->
 
 `inventory_version` is a short hash (first 8 hex of SHA-256, `sha256.c` exists) over the device and
@@ -706,10 +763,19 @@ Reply on `<base>/cmd/response`:
 Codes and errors equal the REST ones. A request without `id` is executed and not answered. Malformed
 JSON is answered with `code` 400 when an `id` can be recovered, otherwise logged.
 
+**As built**: `id` must be a JSON string; a request with a numeric `id` is executed and not
+answered. The Hub subscribes to `<base>/cmd` (and the other inbound topics) at QoS 1, and only
+then publishes `<base>/status` `online`, on the same connection: a client may send a command the
+moment it sees `online` and gets the reply. (Until a fix in #99, `online` went out first and a
+command sent right after it could be dropped, with the clean session.)
+
 No old command topics survive: `<base>/activity/set`, `<base>/send_command`, `<base>/command`
 and `<base>/command/#`, `<base>/sync`, `<base>/remote/<n>/sleep`, `<base>/remote/sleep` and
 `harmony/ir/pronto` are no longer subscribed. `<base>/cmd` and `<base>/ir/raw` are the only
 inbound topics. Pronto over MQTT goes away; the REST endpoint keeps it.
+
+**As built**: the old command topics above are kept as aliases (`activity/set`, `send_command`,
+`command/<dev>/<cmd>`, `sync`, `remote/<n>/sleep`, `harmony/ir/pronto`), next to `<base>/cmd`.
 
 ### 5.4 Discovery removal
 
@@ -724,6 +790,13 @@ marker. The exact topic list is taken from `hub_mqtt_ha.c` before deletion and k
 
 The release note of the milestone 3 PR says the Home Assistant integration replaces the discovery entities and
 names the integration.
+
+**As built**: not done. Discovery is kept (see the start of section 5): `hub_mqtt_ha.c` publishes
+the same object ids on the v2 topics (the select reads `activity_state` and writes
+`activity/set`, the sensors read `<base>/hub`), republished on connect, on Home Assistant's birth
+message, on `<base>/sync` and on a config change, and cleared when `haDiscovery` is turned off.
+The old state topics are still cleared once (5.2). `docs/HOME_ASSISTANT.md` describes the ways to
+connect Home Assistant.
 
 ### 5.5 Settings and status
 
@@ -741,6 +814,10 @@ pulse topics (`<base>/button/device/<cmd>`, the per-device `mqttTopic` and `mqtt
 `POST /api/button-press` MQTT dispatch and the `/api/device-mqtt-test` endpoint) are removed; the
 fields are ignored when present in `devices.json` and dropped from the web UI device editor.
 
+**As built**: the device pulse topics, the per-device `mqttTopic`/`mqttPulseMs` fields and
+`POST /api/device-mqtt-test` are kept. Button events are on `<base>/remote/<slot>/button` as
+specified; the per-remote topic settings are removed.
+
 ### 5.7 Tests
 
 - `tests/test_mqtt_v2.py`: start a small broker on the devbox (`mosquitto` or the Python `amqtt`
@@ -754,6 +831,10 @@ fields are ignored when present in `devices.json` and dropped from the web UI de
   owner's broker; drive an activity from the remote; confirm the old discovery entities disappear
   from Home Assistant's MQTT integration after the upgrade; check `/proc/<pid>/status` is flat
   after an hour.
+- **As built**: the discovery entities stay (no disappearance to check). `tests/test_mqtt_v2.py`
+  uses `tests/mock_mqtt.py` (a stdlib broker) and also checks the discovery configs, the birth
+  republish, the aliases, the device pulse, and that a command sent the moment `online` arrives is
+  answered with the `<base>/cmd` subscription at QoS 1.
 
 ## 6. Milestone 4, PR 4: Logitech protocol shim, SSDP and toggle
 
@@ -835,7 +916,6 @@ Notifications (unsolicited) use `"type"` instead of `"cmd"`, no `id`:
 Exact `cmd` strings and the implementation in `hbus_server.c`:
 
 <!-- pyml disable md013 -->
-
 | `cmd` | Params received | Reply `data` and implementation |
 | --- | --- | --- |
 | `vnd.logitech.harmony/vnd.logitech.harmony.engine?config` | `{"verb":"get","format":"json"}` | the configuration object of 6.5, built on every request by `hbus_config.c`, never cached |
@@ -847,7 +927,6 @@ Exact `cmd` strings and the implementation in `hbus_server.c`:
 | `vnd.logitech.connect/vnd.logitech.statedigest?get` | same | the digest object of 6.7 |
 | `connect.discoveryinfo?get` | same | `{"friendlyName":"<hub_name>","remoteId":"<activeRemoteId>","hubId":"<hub_id>","current_fw_version":"<version>","protocolVersion":"1.0"}` |
 | `setup.account?getProvisionInfo` | never over the WebSocket | not needed |
-
 <!-- pyml enable md013 -->
 
 ### 6.5 Stock configuration object
@@ -991,10 +1070,70 @@ memory and flash use measured on the Hub (`/proc/<pid>/status`, `df`), the resul
 verification list, and anything in this document that turned out wrong or impossible, with the
 change made instead. The integration side is adjusted from that report.
 
+## 9. As built: additions beyond version 1.0
+
+Found while testing the integration on a Hub with a Harmony Ultimate. All in A4 unless noted.
+
+### 9.1 RF status push fixed
+
+See 3.5: the push never reached the bus before (1 KB request buffer); fixed.
+
+### 9.2 Remote model
+
+EquadID 0x4021 is the "Juniper" family (every touchscreen remote), not the Elite. The product
+comes from the remote's skin id (`skin` record of its `mfg` partition), sent in the last byte of
+`RF_MSG_UNIT_ID`: 0x64 Ultimate, 0x66 Ultimate One, 0x69/0x6C Ultimate Home, 0x6F Elite, 0x70
+950, anything else Harmony Touch. Per-slot fields in `rf_status`: `model` (`ultimate`,
+`ultimate_one`, `ultimate_home`, `elite`, `950`, `touch`, `companion`, `smart_control`,
+`unknown`), `model_name` (`null` while unknown), `skin`, `equad_id`. A slot is `unknown` until
+identified; nothing it sends later overwrites the model.
+
+### 9.3 Boot time
+
+`boot_time` (Unix time, `null` until the clock is set) in the status fields (3.6). The MQTT hub
+object is republished once when the clock gets set. Before, only `uptime_sec` was there, and the
+retained copy carried a value from before SNTP.
+
+### 9.4 Battery
+
+- `hub_rf` keeps each slot's last battery report in `/tmp` (RAM) and restores it after a restart
+  with `"restored": true`; `reported_at` (Unix time) added.
+- On the remote: the voltage was doubled (fixed); the percentage follows the rested voltage
+  (screen off 30 s) and under load only falls, at most one point per 2 minutes; while charging the
+  reading is corrected by an offset measured at each charging start; screen-on changes are
+  reported at most once a minute.
+- Suspend: `CLOCK_MONOTONIC` stops during suspend and the remote's kernel has no
+  `CLOCK_BOOTTIME`, so the battery timing now adds the time suspended, measured on the wall clock.
+
+### 9.5 Suspend when the screen blanks
+
+`deep_standby` -1 (new default): on battery the remote suspends 2 s after the screen blanks, as
+the stock firmware does. Never when docked, on USB or charging, never during a config sync or an
+RF update; after the hourly alarm wake it stays up until it has reported its battery.
+
+### 9.6 Button list for the remote
+
+The config push sends the start/stop keys of every activity (at most 15) and the PwrOff fallback
+first, then every on-screen button; other hard keys are mapped on the Hub and are no longer sent.
+The limit is `RF_BUTTON_LIST_MAX` 255 (was 48; 240 on-screen buttons per activity in the web UI).
+
+### 9.7 Key backlight night window
+
+The remote's Settings > Display has Night Starts and Night Ends (whole hours), and the web UI's
+Remote Settings two hour selects, instead of three fixed windows.
+
+### 9.8 Bluetooth hosts after a restart (#101)
+
+After a `hub_btstack` restart every host that was connected comes back, the activity's host
+first (queue of hosts waiting for a reconnect; connected hosts kept in `/tmp`). Since upstream
+506794a, power-off no longer disconnects the Bluetooth hosts (they drop off by themselves) and
+nothing is reconnected while the activity is off.
+
 ## Appendix A. Event payloads
 
-Reference shapes of the six bus events as sent on the WebSocket and as MQTT payloads. `seq` and
-`ts` are added by the bus.
+Reference shapes of the bus events as sent on the WebSocket and as MQTT payloads. `seq` and
+`ts` are added by the bus. The last three (`ir_received`, `ir_capture`, `mqtt_status`) came with
+3.14 and section 5 as built.
 
 ```json
 {"type":"activity_state","activity":"123456","state":2,"stateName":"running","busy":false,"sending":false,"seq":1,"ts":0}
@@ -1003,7 +1142,13 @@ Reference shapes of the six bus events as sent on the WebSocket and as MQTT payl
 {"type":"bt_status","backend":"btstack","pid":1234,"state":"connecting","target":"11:22:33:44:55:66","remote":{"connected":true,"addr":"11:22:33:44:55:66"},"host":{"connected":true,"addr":"AA:BB:CC:DD:EE:FF","name":"Media Player","pairing":false},"hosts":[{"addr":"AA:BB:CC:DD:EE:01","name":"Television","connected":false,"paired":true,"cid":2},{"addr":"AA:BB:CC:DD:EE:FF","name":"Media Player","connected":true,"paired":true,"cid":6}],"ok":true,"running":true,"connected":true,"pairing":false,"seq":4,"ts":0}
 {"type":"rf_status","ok":true,"running":true,"state":"running","connected":true,"pairing_active":false,"paired":true,"slots":[{"slot":1,"active":true,"remote_id":"20141001120000-000002","model":"ultimate","model_name":"Harmony Ultimate","skin":100,"equad_id":16417,"has_screen":true,"battery":{"percent":87,"charging":false,"voltage_mv":3980},"config_version":12,"hub_config_version":12,"in_sync":true,"link":{"last_seen_s":2}}],"seq":5,"ts":0}
 {"type":"button","slot":1,"button":"VolumeUp","action":"press","source":"remote_rf","deviceId":"70321456","command":"VolumeUp","seq":6,"ts":0}
+{"type":"ir_received","modulation":37700,"timings":[4537,-4518,505,-505,505,-1513,505,-55833],"seq":7,"ts":0}
+{"type":"ir_capture","ir_capture":true,"seq":8,"ts":0}
+{"type":"mqtt_status","enabled":true,"connected":true,"broker":"broker.example","port":1883,"baseTopic":"harmony/hub","haDiscovery":true,"seq":9,"ts":0}
 ```
+
+`ir_received` reaches MQTT on `<base>/ir/received`; `ir_capture` republishes `<base>/hub` instead
+of having its own topic; `mqtt_status` is WebSocket and snapshot only.
 
 The `bt_status` object is `hub_btstack`'s status file plus four fields `hub_daemon` adds: `ok`,
 `running` (the `hub_btstack` process is alive), `connected` (any host connected) and `pairing`.
@@ -1016,7 +1161,8 @@ The `rf_status` slot object is whatever `hub_rf` returns today plus nothing new;
 (`ultimate`, `elite`, ..., `unknown`), `model_name` the product name or `null` while unknown. The
 fields shown are the ones the integration reads (`slot`, `active`, `remote_id`, `model`, `battery.percent`,
 `battery.charging`, `battery.voltage_mv`, `in_sync`, `config_version`, `hub_config_version`). If a
-listed field does not exist in `hub_rf`'s status today, add it.
+listed field does not exist in `hub_rf`'s status today, add it. As built, `battery` also carries
+`reported_at` (Unix time or `null`) and `restored` (9.4).
 
 ## Appendix B. Logitech protocol as spoken by aioharmony 1.0.8
 
@@ -1062,7 +1208,6 @@ reconnects (send one right after every upgrade; it is harmless).
 ### B.3 Command strings
 
 <!-- pyml disable md013 -->
-
 | Purpose | `cmd` on the wire | params |
 | --- | --- | --- |
 | configuration | `vnd.logitech.harmony/vnd.logitech.harmony.engine?config` | default |
@@ -1074,7 +1219,6 @@ reconnects (send one right after every upgrade; it is harmless).
 | state digest | `vnd.logitech.connect/vnd.logitech.statedigest?get` | default; reads `data.configVersion`, stores `data` as hub state, `data.hubSwVersion` as firmware |
 | discovery info | `connect.discoveryinfo?get` | default; reads `data.friendlyName` |
 | provisioning | `setup.account?getProvisionInfo` | HTTP POST only, never on the WebSocket |
-
 <!-- pyml enable md013 -->
 
 ### B.4 Configuration key paths read
