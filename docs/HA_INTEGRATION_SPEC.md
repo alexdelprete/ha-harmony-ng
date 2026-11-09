@@ -1,9 +1,12 @@
 # Implementation specification for the Harmony NG integration and pyharmonyng
 
-Version 1.0, 2026-11-06. Companion to `docs/HA_INTEGRATION_ARCHITECTURE.md` (the design and its reasoning) and to
-`docs/HA_INTEGRATION_FIRMWARE_SPEC.md` (what the firmware provides). This document pins what the
+Version 1.1, 2026-11-09 (1.0: 2026-11-06). Companion to `docs/HA_INTEGRATION_ARCHITECTURE.md` (the design and its
+reasoning) and to `docs/HA_INTEGRATION_FIRMWARE_SPEC.md` (what the firmware provides). This document pins what the
 integration and its library implement, entity by entity and call by call, so that the two
 transports produce identical results and the firmware side knows which flag unlocks what.
+
+Version 1.1 records what was built, up to integration release 0.1.7 and firmware specification 1.1. Where the
+implementation differs from version 1.0 the text says so ("As built"); section 7 lists what was added beyond it.
 
 ## 0. Scope and delivery
 
@@ -36,6 +39,9 @@ Milestones, each one pull request per repository, aligned with the firmware ones
 Rules that apply throughout: the repository's CLAUDE.md (pre-commit before every commit, tests in
 CI only, 97 percent coverage, `translations/en.json` as the string source, no `strings.json`);
 Home Assistant minimum 2026.8.0; Python 3.14; no personal data in fixtures or docs.
+
+**As built**: the Home Assistant minimum is 2026.11.0 (raised by the shared scaffolding). The library is still vendored
+and `manifest.json` lists no requirements; the move to PyPI stays at the end of the implementation.
 
 ## 1. Library: pyharmonyng
 
@@ -158,6 +164,12 @@ name, connected), `BtStatus` (running, connected, target, hosts), `ButtonEvent` 
 action, device_id, command, ts), `Snapshot` (hub, activity_state, bt_status, rf_status,
 config_files: Mapping[str, int], seq, gap), `HelpResult`.
 
+**As built**: `HubStatus` also has `commit`, `firmware`, `boot_time` (Unix time from the Hub, `None` until its clock
+is set), `ir_capture` and `ir_capture_error` (present only while the receiver has a problem). `RfSlot` also has
+`model_name` (`None` while the Hub does not know the product), `skin`, `equad_id`, `battery_reported_at` (Unix time or
+`None`) and `battery_restored` (true for a report `hub_rf` restored after a restart). `IrCaptureEvent` and
+`IrReceivedEvent` join the event classes.
+
 ### 1.5 Exceptions and capabilities
 
 ```python
@@ -265,6 +277,13 @@ the listener and returns its snapshot.
 - Commands publish to `<base>/cmd` with a uuid4 `id` and await the matching `cmd/response` for
   10 s; `ok: false` maps `code` 409 to `HarmonyNgBusyError`, 401 to `HarmonyNgAuthError`, anything
   else to `HarmonyNgApiError`; a timeout is `HarmonyNgConnectionError`.
+
+  **As built**: the `id` is a string (12 hex characters of a uuid4); the Hub executes a request with a numeric `id`
+  and does not answer it. The Hub subscribes to `<base>/cmd` at QoS 1 and only then publishes `<base>/status`
+  `online` (firmware PR #99), so a command sent the moment `online` arrives is answered. On firmware before that fix,
+  `online` went out first and such a command could be lost; the infrared receiver's retry (2.7) covers that case.
+- **As built**: the IR capture state has no topic of its own. Every change republishes `<base>/hub`, whose
+  `ir_capture` and `ir_capture_error` update the state as the WebSocket `ir_capture` event does.
 - `<base>/status` `offline` or a lost broker connection fires `on_connection(False)`.
 - Retained state payloads are converted with the same `events.parse` as the WebSocket frames, so
   both transports feed identical `HubEvent` objects into the coordinator.
@@ -301,6 +320,13 @@ class HubState:
   logs the recovery (`log-when-unavailable`, no manual logging).
 - `last_activity_id` is kept across power off for the remote entity's `last_activity` attribute
   and the `previous activity` option.
+- **As built** (0.1.7): the Hub lists PowerOff (id `-1`) with the activities, as the Logitech configuration does. The
+  coordinator leaves it out of `activities`, as the core integration does, so it is not an activity name in the
+  remote, the select, the activity buttons or the options.
+- **As built** (0.1.6): firmware without the A4 fix reports a remote's product as unknown after a `hub_rf` restart,
+  until the remote reboots. When a slot's `product_name` turns `None` while its `remote_id` is unchanged, the
+  coordinator keeps the model fields it had for that remote (`keep_known_products`); at setup it takes the model from
+  the device registry. Another remote has another unit id and inherits nothing.
 - Button events are not state: the coordinator fans them out to per-slot listeners that the
   event entities register in `async_added_to_hass`.
 - When a remote's unit id first appears, the coordinator re-keys the device and entity registry
@@ -356,7 +382,7 @@ passes `step_id`. The transport is never implied by how the Hub was found.
 | Device | Identifiers | Fields | Notes |
 | --- | --- | --- | --- |
 | Hub | `(DOMAIN, hub_id)` | manufacturer Logitech, model Harmony Hub, model_id from `skin` when exposed, sw_version `version`, hw_version Logitech base firmware, serial_number `hub_id`, configuration_url `http://host:8089` (API) or absent (MQTT) | root device of the entry |
-| Remote | `(DOMAIN, remote_id)` | manufacturer Logitech, model from the slot (`Harmony Ultimate`, `Harmony Elite`, ...), sw_version remote firmware, serial_number `remote_id`, via_device_id the Hub's registry id | one per active slot; the slot number is an attribute of its entities |
+| Remote | `(DOMAIN, remote_id)` | manufacturer Logitech, model from the slot (`Harmony Ultimate`, `Harmony Elite`, ...), sw_version remote firmware, serial_number `remote_id`, via_device_id the Hub's registry id | one per active slot; the slot number is an attribute of its entities. As built: the model is the slot's `model_name`, or the product name for a screenless model, kept across a `hub_rf` restart (2.3) |
 | Remote without id | `(DOMAIN, f"{hub_id}:slot{n}")` | as above, no serial | fallback for a remote running firmware that does not report its unit id |
 | Configured device | `(DOMAIN, f"{hub_id}:device:{id}")`, a child device (`ChildDeviceInfo`, parent = the Hub's registry id) | name from the inventory | one per inventory device, added as the inventory changes; removable from the device page once it left the inventory |
 
@@ -380,25 +406,26 @@ the address lowercased and colons removed.
 
 | Platform | Key | Owner | Category | Device class / options | Value and attributes | Availability beyond connected |
 | --- | --- | --- | --- | --- | --- | --- |
-| remote | `remote` (name None) | Hub | none | `RemoteEntityFeature.ACTIVITY` | `is_on` = activity not `-1`; attributes `current_activity` (name), `activity_list`, `last_activity`, `activity_starting`, `devices_list`; `turn_on` with `activity` by name or id, else the default activity; `turn_off` = power off; `send_command` runs each command as press, hold `hold_secs`, release, `num_repeats` times, `delay_secs` between | always |
-| select | `activity` | Hub | none | options `power_off` plus activity names | current activity; selecting `power_off` powers off | always |
+| remote | `remote` (name None) | Hub | none | `RemoteEntityFeature.ACTIVITY` | `is_on` = activity not `-1`; attributes `current_activity` (name; `PowerOff` while off, as core), `activity_list` (without PowerOff), `last_activity`, `activity_starting`, `devices_list`; `turn_on` with `activity` by name or id, else the default activity; `turn_off` = power off; `send_command` runs each command as press, hold `hold_secs`, release, `num_repeats` times, `delay_secs` between | always |
+| select | `activity` | Hub | none | options `PowerOff` plus activity names, as core (the Hub's own PowerOff entry left out) | current activity; selecting `PowerOff` powers off | always |
 | sensor | `activity_state` | Hub | diagnostic | enum `idle`, `starting`, `running`, `stopping` | `ActivityState.state` | always |
 | sensor | `firmware` | Hub | diagnostic | none | `version` | always |
-| sensor | `uptime` | Hub | diagnostic, disabled | timestamp | `received_at - uptime_sec` | always |
+| sensor | `uptime` (named Last boot) | Hub | diagnostic, disabled | timestamp | as built: the Hub's `boot_time`; on firmware without it, or before its clock is set, `received_at - uptime_sec` once per snapshot | always |
 | binary_sensor | `busy` | Hub | diagnostic | running | `busy or sending` | always |
 | binary_sensor | `bt_host_{bdaddr}` | Hub | diagnostic | connectivity | host connected; attributes `name`, `bdaddr` | created and removed dynamically with the paired host list |
 | button | `power_off` | Hub | none | none | power off | always |
 | button | `sync_remotes` | Hub | config | none | push config | always |
 | button | `cancel_activity` | Hub | config | none | cancel | always |
 | sensor | `battery` | Remote | diagnostic | battery, percent | `battery_percent` | slot active |
-| sensor | `battery_voltage` | Remote | diagnostic, disabled | voltage, mV | `voltage_mv` | slot active |
+| sensor | `battery_voltage` | Remote | diagnostic, disabled | voltage, mV; as built shown in V with 2 decimals | `voltage_mv` | slot active |
+| sensor | `battery_reported_at` (as built) | Remote | diagnostic | timestamp | `battery_reported_at` | slot active |
 | binary_sensor | `charging` | Remote | diagnostic | battery_charging | `charging` | slot active |
 | binary_sensor | `config_out_of_sync` | Remote | diagnostic | problem | `not in_sync` | slot active |
 | button | `wake` | Remote | config | none | `rf_wake(slot)` | `rf_wake` capability |
 | button | `sleep` | Remote | config | none | `rf_sleep(slot)` | slot active |
 | event | `button` | Remote | none | event types `press`, `release`; device class button | fired on `ButtonEvent` for the slot; attributes `button`, `device_id`, `command`, `source` | slot active |
 | infrared | `ir_front`, `ir_jack1`, `ir_jack2` | Hub | none | emitter; jacks disabled by default | `InfraredEmitterEntity.async_send_command`: `ir_raw(command.modulation, command.get_raw_timings(), port, command.repeat_count)` with port 1, 2, 4 | `ir_raw` capability |
-| infrared | `ir_receiver` | Hub | none | receiver; disabled by default | turns the Hub's capture on in `async_added_to_hass` and off on removal; every `ir_received` event becomes `InfraredReceivedSignal(timings, modulation)` | `ir_capture` capability |
+| infrared | `ir_receiver` | Hub | none | receiver; disabled by default | turns the Hub's capture on in `async_added_to_hass` and off on removal; every `ir_received` event becomes `InfraredReceivedSignal(timings, modulation)`. As built: the mode is off after every Hub start, so the receiver turns it on again when the Hub comes back or a new hub object reports it off, follows the `ir_capture` event, and retries a failed start every 30 s while the Hub does not report it on (0.1.5) | `ir_capture` capability |
 | update | `firmware_update` | Hub | config | firmware; `INSTALL` | installed = `hub.version`; latest from the Hub's release check, polled every 24 h and run on add, after an install and when the Hub comes back with a new version; `install` calls `update_apply` | always |
 | remote | `remote` of each configured device | child device | none | assumed state, no activity feature | `send_command` without naming the device; `turn_on` sends PowerOn else PowerToggle, `turn_off` PowerOff else PowerToggle; attributes commands, manufacturer, model, type | device still in the inventory |
 
@@ -446,6 +473,11 @@ messages (`exception-translations`).
 <!-- pyml enable md013 -->
 
 Issues are created with the entry's id and refreshed with `async_refresh_issues` on every setup.
+
+**As built**: the firmware keeps Home Assistant MQTT discovery (firmware specification 5.4), rebuilt on the v2 topics
+with the same object ids, so both sets of entities exist when a user enables discovery on the Hub and also sets up
+this integration. The `mqtt_discovery_orphans` check still matches the `_ir_devices` and `_ir_commands` sensors the
+kept discovery publishes, so on a Hub with discovery on it reports live entities as orphans; to be revised.
 
 Diagnostics return the entry data with `host`, `token` and `mqtt_base_topic` redacted, the options,
 the last `HubState` as a dict with Bluetooth addresses redacted, the transport name, the
@@ -535,3 +567,17 @@ in code and the Hub announces itself over mDNS since firmware milestone 2. The n
    coexist.
 10. Options keep the two names core users know, `default_activity` and `delay_secs`, so automations
     port with a rename of the entity id only.
+
+## 7. As built: additions beyond version 1.0
+
+- **Activity buttons**: one `start_activity` button per activity (`Start {activity}`), unique id
+  `{hub_id}_activity_{activity id}`, unavailable once the activity is deleted on the Hub. 0.1.7 removes the button
+  earlier releases made for the Hub's PowerOff entry.
+- **Device command buttons**: one `device_command` button per command of each configured device, on the child
+  device, disabled by default.
+- **Last battery report**: the `battery_reported_at` sensor per remote (1.4).
+- **Remote model kept** across a `hub_rf` restart (2.3, 0.1.6).
+- **Infrared capture kept on** after every Hub start, with a 30 s retry (2.7, 0.1.4 and 0.1.5).
+- **Bluetooth hosts**: after a `hub_btstack` restart every host that was connected comes back, the activity's host
+  first (firmware PR #101). Since upstream 506794a, power-off no longer disconnects the hosts and nothing reconnects
+  while the activity is off, so the connectivity sensors can show hosts connected for a while after power-off.
