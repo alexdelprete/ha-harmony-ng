@@ -1,9 +1,11 @@
-"""Repairs: the fix flow that removes the Hub's old MQTT discovery entities.
+"""Repairs: the fix flow that removes the Hub's MQTT discovery device left behind.
 
-Firmware before milestone 3 published Home Assistant discovery configs for a
-handful of sensors and buttons. Once the Hub stops publishing them, their
-registry entries stay behind under the mqtt integration and duplicate what this
-integration provides. The issue lists them and the fix removes them.
+With Home Assistant discovery on (the firmware default) the Hub publishes its own
+MQTT discovery device, and it lives next to this integration's devices on purpose.
+When discovery is turned off the Hub clears its discovery configs and the mqtt
+integration removes the entities, unless Home Assistant missed that moment: then
+the device stays behind. The issue is raised only while the Hub reports discovery
+off, and only for the device whose discovery payload names this Hub.
 """
 
 from __future__ import annotations
@@ -14,36 +16,35 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er, 
 
 from .const import DOMAIN, ISSUE_MQTT_DISCOVERY_ORPHANS
 
-ORPHAN_MARKERS = ("_ir_devices", "_ir_commands")
-"""Unique id suffixes that only the Hub's old discovery set used, together."""
+DATA_HUB_ID = "hub_id"
+
+
+def discovery_identifier(hub_id: str) -> tuple[str, str]:
+    """Return the identifier the Hub puts in its discovery payload's device block."""
+    return ("mqtt", f"harmony-ng-{hub_id}")
 
 
 @callback
-def async_find_discovery_orphans(hass: HomeAssistant) -> list[dr.DeviceEntry]:
-    """Return the mqtt devices that hold the Hub's old discovery entities."""
-    entity_registry = er.async_get(hass)
-    device_registry = dr.async_get(hass)
-    suffixes_by_device: dict[str, set[str]] = {}
-    for entry in entity_registry.entities.values():
-        if entry.platform != "mqtt" or entry.device_id is None:
-            continue
-        for marker in ORPHAN_MARKERS:
-            if str(entry.unique_id).endswith(marker):
-                suffixes_by_device.setdefault(entry.device_id, set()).add(marker)
-    orphans: list[dr.DeviceEntry] = []
-    for device_id, suffixes in suffixes_by_device.items():
-        if suffixes != set(ORPHAN_MARKERS):
-            continue
-        device = device_registry.async_get(device_id)
-        if isinstance(device, dr.DeviceEntry):
-            orphans.append(device)
-    return orphans
+def async_find_discovery_orphans(hass: HomeAssistant, hub_id: str) -> list[dr.DeviceEntry]:
+    """Return the mqtt devices the Hub's discovery created."""
+    # Any config entry: the device belongs to the mqtt integration's entry
+    return dr.async_get(hass).async_get_devices(identifiers={discovery_identifier(hub_id)})
+
+
+def _device_names(devices: list[dr.DeviceEntry]) -> str:
+    return ", ".join(sorted(d.name_by_user or d.name or d.id for d in devices))
 
 
 @callback
-def async_refresh_discovery_issue(hass: HomeAssistant, entry_id: str, title: str) -> None:
-    """Raise or clear the orphaned discovery entities issue for an entry."""
-    orphans = async_find_discovery_orphans(hass)
+def async_refresh_discovery_issue(
+    hass: HomeAssistant, entry_id: str, title: str, hub_id: str, ha_discovery: bool | None
+) -> None:
+    """Raise or clear the issue; never while discovery is on or its setting unknown.
+
+    Firmware that does not report the setting (MQTT transport before firmware A4)
+    leaves it None, which is not the same as off.
+    """
+    orphans = async_find_discovery_orphans(hass, hub_id) if ha_discovery is False else []
     with ir.async_refresh_issues(
         hass, DOMAIN, issue_ids=[ISSUE_MQTT_DISCOVERY_ORPHANS], config_entry_id=entry_id
     ):
@@ -53,18 +54,20 @@ def async_refresh_discovery_issue(hass: HomeAssistant, entry_id: str, title: str
                 DOMAIN,
                 ISSUE_MQTT_DISCOVERY_ORPHANS,
                 config_entry_id=entry_id,
+                data={DATA_HUB_ID: hub_id},
                 is_fixable=True,
                 severity=ir.IssueSeverity.WARNING,
                 translation_key=ISSUE_MQTT_DISCOVERY_ORPHANS,
-                translation_placeholders={
-                    "name": title,
-                    "devices": ", ".join(sorted(d.name_by_user or d.name or d.id for d in orphans)),
-                },
+                translation_placeholders={"name": title, "devices": _device_names(orphans)},
             )
 
 
 class DiscoveryOrphansRepairFlow(RepairsFlow):
-    """Confirm, then delete the old discovery devices and their entities."""
+    """Confirm, then delete the Hub's discovery devices and their entities."""
+
+    def __init__(self, hub_id: str) -> None:
+        """Remember which Hub's devices to remove."""
+        self._hub_id = hub_id
 
     async def async_step_init(self, user_input: dict[str, str] | None = None) -> RepairsFlowResult:
         """Go straight to the confirmation."""
@@ -74,7 +77,7 @@ class DiscoveryOrphansRepairFlow(RepairsFlow):
         self, user_input: dict[str, str] | None = None
     ) -> RepairsFlowResult:
         """Remove the orphans on confirm; Home Assistant then deletes the issue."""
-        orphans = async_find_discovery_orphans(self.hass)
+        orphans = async_find_discovery_orphans(self.hass, self._hub_id)
         if user_input is not None:
             entity_registry = er.async_get(self.hass)
             device_registry = dr.async_get(self.hass)
@@ -86,10 +89,7 @@ class DiscoveryOrphansRepairFlow(RepairsFlow):
                 device_registry.async_remove_device(device.id)
             return self.async_create_entry(data={})
         return self.async_show_form(
-            step_id="confirm",
-            description_placeholders={
-                "devices": ", ".join(sorted(d.name_by_user or d.name or d.id for d in orphans))
-            },
+            step_id="confirm", description_placeholders={"devices": _device_names(orphans)}
         )
 
 
@@ -99,4 +99,4 @@ async def async_create_fix_flow(
     data: dict[str, str | int | float | None] | None,
 ) -> RepairsFlow:
     """Return the fix flow for a fixable issue of this integration."""
-    return DiscoveryOrphansRepairFlow()
+    return DiscoveryOrphansRepairFlow(str((data or {}).get(DATA_HUB_ID) or ""))

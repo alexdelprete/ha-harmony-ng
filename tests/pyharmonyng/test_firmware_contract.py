@@ -4,6 +4,8 @@ The files under fixtures/firmware are copied unchanged from the harmony-ng
 firmware's tests/fixtures/ha, which the firmware builds with its real writers
 (the RF status builder, hub_btstack's status file, a real infrared capture), at
 branch hub/published-ir (8924294), whose fixtures equal the prepared upstream chain.
+mqtt_retained.json comes from branch feat/ha-rf-remote-fixes (A4, 9104db1), the first
+whose retained hub object carries the Home Assistant discovery setting.
 The other fixtures are shaped for the integration tests; these keep the parsing
 honest about the key names the firmware really uses.
 """
@@ -102,6 +104,8 @@ def test_snapshot() -> None:
     assert snapshot.hub.has(CAP_IR_CAPTURE)
     assert snapshot.hub.ir_capture is False
     assert snapshot.hub.ir_capture_error is None
+    # Over WebSocket the discovery setting comes with the MQTT client status
+    assert snapshot.hub.ha_discovery is True
 
 
 def test_mqtt_retained() -> None:
@@ -121,6 +125,7 @@ def test_mqtt_retained() -> None:
     hub = HubStatus.from_json(retained["harmony/hub/hub"])
     assert hub.has(CAP_IR_CAPTURE)
     assert hub.ir_capture is False
+    assert hub.ha_discovery is True
     # ir/received is QoS 0 and never retained
     assert not any(topic.endswith("/ir/received") for topic in retained)
 

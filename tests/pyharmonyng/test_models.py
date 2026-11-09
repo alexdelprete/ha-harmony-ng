@@ -60,6 +60,14 @@ def test_hub_status_without_mqtt_and_uptime() -> None:
     assert status.uptime_sec is None
 
 
+def test_hub_status_discovery_setting() -> None:
+    """Only the retained MQTT hub object carries it; absent is unknown, not off."""
+    data = load_json("status")
+    assert HubStatus.from_json(data).ha_discovery is None
+    assert HubStatus.from_json({**data, "ha_discovery": False}).ha_discovery is False
+    assert HubStatus.from_json({**data, "ha_discovery": "no"}).ha_discovery is None
+
+
 def test_hub_status_rejects_old_firmware() -> None:
     data = load_json("status")
     with pytest.raises(HarmonyNgUnsupportedError, match="hub_id"):
@@ -214,6 +222,12 @@ def test_snapshot() -> None:
     assert snapshot.seq == 42
     assert snapshot.gap is False
     assert snapshot.with_gap(True).gap is True
+    assert snapshot.hub.ha_discovery is None
+    with_mqtt = {
+        **load_json("snapshot"),
+        "mqtt_status": {"type": "mqtt_status", "haDiscovery": False},
+    }
+    assert Snapshot.from_json(with_mqtt).hub.ha_discovery is False
 
 
 def test_help_result() -> None:

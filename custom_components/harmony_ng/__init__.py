@@ -23,7 +23,6 @@ from .const import (
     TRANSPORT_MQTT,
 )
 from .coordinator import HarmonyNgCoordinator
-from .repairs import async_refresh_discovery_issue
 from .services import async_setup_services
 from .transport import HarmonyNgTransport
 from .transport.api import ApiTransport
@@ -78,7 +77,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: HarmonyNgConfigEntry) ->
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    async_refresh_discovery_issue(hass, entry.entry_id, entry.title)
+    # From here on the coordinator refreshes it whenever the Hub reports a change
+    coordinator.async_refresh_discovery_issue(coordinator.data.hub.ha_discovery)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: HarmonyNgConfigEntry) -> None:
