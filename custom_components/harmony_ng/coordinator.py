@@ -27,6 +27,7 @@ from .const import (
     TRANSPORT_API,
 )
 from .pyharmonyng import (
+    POWER_OFF_ACTIVITY_ID,
     Activity,
     ActivityProgressEvent,
     ActivityState,
@@ -234,7 +235,12 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         if base is None:
             raise UpdateFailed("the coordinator was not set up")
         try:
-            activities = await self.transport.fetch_activities()
+            # The Hub lists PowerOff (-1) with the activities; core leaves it out too
+            activities = tuple(
+                activity
+                for activity in await self.transport.fetch_activities()
+                if activity.id != POWER_OFF_ACTIVITY_ID
+            )
             inventory = await self.transport.fetch_inventory()
         except HarmonyNgAuthError as err:
             raise ConfigEntryAuthFailed(

@@ -33,6 +33,7 @@ from .const import (
     CONF_DELAY_SECS,
     DEFAULT_DELAY_SECS,
     DOMAIN,
+    POWER_OFF_LABEL,
     PREVIOUS_ACTIVITY,
     SERVICE_SYNC,
 )
@@ -126,8 +127,10 @@ class HarmonyNgRemote(HarmonyNgEntity, RemoteEntity):
 
     @property
     def current_activity(self) -> str | None:
-        """Return the running activity's name."""
+        """Return the running activity's name, or PowerOff as the core integration does."""
         state = self.state_data
+        if not state.activity.is_on:
+            return POWER_OFF_LABEL
         return state.activity_name(state.activity.activity_id)
 
     @property

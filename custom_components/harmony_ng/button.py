@@ -11,16 +11,22 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
-from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
+from homeassistant.components.button import (
+    DOMAIN as BUTTON_DOMAIN,
+    ButtonEntity,
+    ButtonEntityDescription,
+)
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import HarmonyNgConfigEntry
+from .const import DOMAIN
 from .coordinator import HarmonyNgCoordinator
 from .entity import HarmonyNgEntity, async_add_dynamic_entities
 from .helpers import hub_call
-from .pyharmonyng import CAP_RF_WAKE, Activity, CommandAction, Device
+from .pyharmonyng import CAP_RF_WAKE, POWER_OFF_ACTIVITY_ID, Activity, CommandAction, Device
 from .transport import HarmonyNgTransport
 
 
@@ -82,6 +88,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Hub, activity, remote and device command buttons."""
     coordinator = entry.runtime_data.coordinator
+    _async_remove_power_off_activity(hass, coordinator.hub_id)
     async_add_entities(HarmonyNgHubButton(coordinator, d) for d in HUB_BUTTONS)
     entry.async_on_unload(
         async_add_dynamic_entities(
@@ -111,6 +118,19 @@ async def async_setup_entry(
             lambda coord, key: [HarmonyNgDeviceCommandButton(coord, *key)],
         )
     )
+
+
+def _async_remove_power_off_activity(hass: HomeAssistant, hub_id: str) -> None:
+    """Remove the activity button 0.1.6 and earlier made for the Hub's PowerOff entry.
+
+    The Hub lists PowerOff (-1) with the activities; the Power off button covers it.
+    """
+    registry = er.async_get(hass)
+    stale = registry.async_get_entity_id(
+        BUTTON_DOMAIN, DOMAIN, f"{hub_id}_activity_{POWER_OFF_ACTIVITY_ID}"
+    )
+    if stale is not None:
+        registry.async_remove(stale)
 
 
 class HarmonyNgHubButton(HarmonyNgEntity, ButtonEntity):

@@ -44,7 +44,7 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.util import dt as dt_util
 
-from .conftest import HUB_ID, FakeTransport
+from .conftest import HUB_ID, POWER_OFF_ACTIVITY, FakeTransport
 from .pyharmonyng.conftest import load_frames
 
 ENTITY = "remote.living_room_hub"
@@ -322,3 +322,20 @@ async def test_device_remote_follows_inventory(
         await entity.async_send_command(["Home"])
     with pytest.raises(ServiceValidationError, match="No device named 70321458"):
         await entity.async_turn_on()
+
+
+async def test_hub_power_off_not_an_activity(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, fake_transport: FakeTransport
+) -> None:
+    """The Hub lists PowerOff with the activities; the remote reports it only when off."""
+    fake_transport.activities = (*fake_transport.activities, POWER_OFF_ACTIVITY)
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    state = hass.states.get(ENTITY)
+    assert state.attributes["activity_list"] == ["Watch TV", "Listen to Music"]
+    assert state.attributes["current_activity"] == "PowerOff"
+
+    fake_transport.push(load_frames("ws_activity_switch")[0])
+    await hass.async_block_till_done()
+    assert hass.states.get(ENTITY).attributes["current_activity"] == "Watch TV"
