@@ -476,8 +476,12 @@ Issues are created with the entry's id and refreshed with `async_refresh_issues`
 
 **As built**: the firmware keeps Home Assistant MQTT discovery (firmware specification 5.4), rebuilt on the v2 topics
 with the same object ids, so both sets of entities exist when a user enables discovery on the Hub and also sets up
-this integration. The `mqtt_discovery_orphans` check still matches the `_ir_devices` and `_ir_commands` sensors the
-kept discovery publishes, so on a Hub with discovery on it reports live entities as orphans; to be revised.
+this integration. Since 0.1.8 `mqtt_discovery_orphans` is raised only while the Hub reports discovery off: `haDiscovery`
+in the WebSocket snapshot's `mqtt_status` and in the `mqtt_status` event, or `ha_discovery` in the retained MQTT `hub`
+object (firmware A4 onwards). A missing setting is unknown and raises nothing. The check matches only the `mqtt` device
+whose identifiers carry `harmony-ng-<hub_id>`, and the coordinator refreshes the issue whenever the reported setting
+changes. The Hub clears its discovery configs itself when discovery is turned off, so the repair only catches a device
+left behind while Home Assistant was not listening.
 
 Diagnostics return the entry data with `host`, `token` and `mqtt_base_topic` redacted, the options,
 the last `HubState` as a dict with Bluetooth addresses redacted, the transport name, the
