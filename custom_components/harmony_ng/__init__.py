@@ -76,7 +76,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: HarmonyNgConfigEntry) ->
         config_entry_id=entry.entry_id, **coordinator.hub_device_info()
     )
 
+    # A remote whose unit id arrived while Home Assistant was not running keeps its device
+    coordinator.async_migrate_remote_identities()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    # Remotes, hosts and devices the Hub dropped while Home Assistant was not running
+    coordinator.async_remove_stale()
     # From here on the coordinator refreshes it whenever the Hub reports a change
     coordinator.async_refresh_discovery_issue(coordinator.data.hub.ha_discovery)
 

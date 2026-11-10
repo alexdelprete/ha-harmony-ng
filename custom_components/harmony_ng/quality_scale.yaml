@@ -56,7 +56,12 @@ rules:
   docs-supported-functions: done
   docs-troubleshooting: done
   docs-use-cases: done
-  dynamic-devices: done
+  dynamic-devices:
+    status: done
+    comment: >-
+      Remotes (keyed by unit id, or Hub id and slot), Bluetooth hosts and configured devices
+      get their devices and entities on the update that reports them, also a remote swapped
+      into an occupied slot.
   entity-category: done
   entity-device-class: done
   entity-disabled-by-default: done
@@ -65,7 +70,13 @@ rules:
   icon-translations: done
   reconfiguration-flow: done
   repair-issues: done
-  stale-devices: done
+  stale-devices:
+    status: done
+    comment: >-
+      Remotes, Bluetooth hosts, configured devices and commands the Hub no longer reports are
+      removed with their entities, on the update and once after setup; only from a complete
+      report (RF and Bluetooth running, a fetched inventory). async_remove_config_entry_device
+      stays as the fallback.
 
   # Platinum
   async-dependency: done

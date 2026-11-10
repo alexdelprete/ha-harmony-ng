@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import logging
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr, entity_registry as er, issue_registry as ir
@@ -66,6 +67,8 @@ type IrListener = Callable[[IrSignal], None]
 
 
 DEFAULT_REMOTE_NAME = "Harmony remote"
+BT_HOST_UNIQUE_ID_INFIX = "_bt_host_"
+COMMAND_UNIQUE_ID_INFIX = "_command_"
 
 
 def remote_device_name(rf: RfStatus, slot: int) -> str:
@@ -183,6 +186,8 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         self._ir_listeners: list[IrListener] = []
         self._discovery_checked = False
         self._ha_discovery: bool | None = None
+        self._inventory_loaded = False
+        self.reload_pending = False
         transport.set_callbacks(
             on_event=self._handle_event,
             on_connection=self._handle_connection,
@@ -255,6 +260,8 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         self._state = replace(
             base, activities=activities, inventory=inventory, received_at=dt_util.utcnow()
         )
+        self._inventory_loaded = True
+        self._async_remove_stale(base, self._state)
         return self._state
 
     async def async_shutdown(self) -> None:
@@ -293,6 +300,17 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
             return rf_slot.remote_id
         return f"{self.hub_id}:slot{slot}"
 
+    def remote_identities(self, state: HubState) -> dict[str, int]:
+        """Return the identifier of every paired remote, with its slot."""
+        return {
+            rf_slot.remote_id or f"{self.hub_id}:slot{rf_slot.slot}": rf_slot.slot
+            for rf_slot in state.rf.active_slots
+        }
+
+    def bt_host_unique_id(self, bdaddr: str) -> str:
+        """Return the unique id of a Bluetooth host's connectivity sensor."""
+        return f"{self.hub_id}{BT_HOST_UNIQUE_ID_INFIX}{bdaddr.replace(':', '').lower()}"
+
     def remote_device_info(self, slot: int) -> DeviceInfo:
         """Return the device info of the remote in a slot, linked under the Hub."""
         state = self.data or self._state
@@ -325,6 +343,10 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
     def child_identifier(self, device_id: str) -> str:
         """Return the registry identifier of a configured device's child device."""
         return f"{self.hub_id}:{DEVICE_IDENTIFIER_PREFIX}:{device_id}"
+
+    def command_unique_id(self, device_id: str, command: str) -> str:
+        """Return the unique id of a configured device's command button."""
+        return f"{self.child_identifier(device_id)}{COMMAND_UNIQUE_ID_INFIX}{command}"
 
     def child_device_info(self, device_id: str) -> ChildDeviceInfo:
         """Return the child device info of a configured IR or Bluetooth device."""
@@ -421,7 +443,10 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
 
     @callback
     def _set_state(self, state: HubState) -> None:
+        old = self._state
         self._state = state
+        if old is not None:
+            self._async_remove_stale(old, state)
         if self.data is not None or self.last_update_success is False:
             self.async_set_updated_data(state)
         if self._discovery_checked and state.hub.ha_discovery != self._ha_discovery:
@@ -506,7 +531,15 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
             if self._migrate_slot(new_slot.slot, new_slot.remote_id):
                 migrated = True
         if migrated:
+            self.reload_pending = True
             self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
+
+    @callback
+    def async_migrate_remote_identities(self) -> None:
+        """Re-key, before the entities exist, the remotes whose unit id arrived while stopped."""
+        for rf_slot in self.data.rf.active_slots:
+            if rf_slot.remote_id:
+                self._migrate_slot(rf_slot.slot, rf_slot.remote_id)
 
     def _refresh_remote_devices(self, old: RfStatus, new: RfStatus) -> None:
         """Update a remote's model and name when the Hub learns its product.
@@ -561,6 +594,98 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         _LOGGER.info("Remote in slot %s now identified by its unit id", slot)
         return True
 
+    # Devices and entities the Hub no longer reports
+
+    @callback
+    def async_remove_stale(self) -> None:
+        """Remove what the Hub no longer reports, also what went while Home Assistant was down."""
+        self._async_remove_stale(None, self.data)
+
+    @callback
+    def _async_remove_stale(self, old: HubState | None, new: HubState) -> None:
+        """Remove the remotes, Bluetooth hosts and configured devices the Hub dropped.
+
+        Only from a report that can be trusted to be complete: the RF and Bluetooth
+        services running, and an inventory the integration has fetched. A device or
+        entity that comes back is created again, and Home Assistant restores the
+        entity ids, names and areas it had.
+        """
+        if self.reload_pending:
+            return
+        remotes = new.rf.running and (
+            old is None or self.remote_identities(old) != self.remote_identities(new)
+        )
+        hosts = new.bt.running and (old is None or _host_keys(old) != _host_keys(new))
+        children = self._inventory_loaded and (
+            old is None or _inventory_keys(old) != _inventory_keys(new)
+        )
+        if remotes or children:
+            self._remove_stale_devices(new, remotes=remotes, children=children)
+        if hosts:
+            self._remove_stale_entities(
+                Platform.BINARY_SENSOR,
+                f"{self.hub_id}{BT_HOST_UNIQUE_ID_INFIX}",
+                {self.bt_host_unique_id(host.bdaddr) for host in new.bt.hosts if host.bdaddr},
+            )
+        if children:
+            self._remove_stale_entities(
+                Platform.BUTTON,
+                f"{self.hub_id}:{DEVICE_IDENTIFIER_PREFIX}:",
+                {
+                    self.command_unique_id(device.id, command)
+                    for device in new.inventory.devices
+                    for command in device.commands
+                },
+                infix=COMMAND_UNIQUE_ID_INFIX,
+            )
+
+    def _remove_stale_devices(self, state: HubState, *, remotes: bool, children: bool) -> None:
+        device_registry = dr.async_get(self.hass)
+        stale: list[dr.DeviceEntry | dr.ChildDeviceEntry] = []
+        if remotes:
+            # Remotes are devices of the entry linked under the Hub
+            wanted = set(self.remote_identities(state))
+            stale.extend(
+                device
+                for device in dr.async_entries_for_config_entry(
+                    device_registry, self.config_entry.entry_id
+                )
+                if (identifiers := _own_identifiers(device))
+                and self.hub_id not in identifiers
+                and not identifiers & wanted
+            )
+        hub = device_registry.async_get_device_by_identifier(
+            (DOMAIN, self.hub_id), self.config_entry.entry_id
+        )
+        if children and hub is not None:
+            # Configured devices are child devices of the Hub
+            wanted = {self.child_identifier(device.id) for device in state.inventory.devices}
+            stale.extend(
+                child
+                for child in dr.async_entries_for_parent_device(device_registry, hub.id)
+                if (identifiers := _own_identifiers(child)) and not identifiers & wanted
+            )
+        for device in stale:
+            _LOGGER.info("Removing %s, which the Hub no longer reports", device.name)
+            # Its entities go with it
+            device_registry.async_remove_device(device.id)
+
+    def _remove_stale_entities(
+        self, domain: str, prefix: str, wanted: set[str], *, infix: str | None = None
+    ) -> None:
+        entity_registry = er.async_get(self.hass)
+        for entry in er.async_entries_for_config_entry(entity_registry, self.config_entry.entry_id):
+            unique_id = entry.unique_id
+            if (
+                entry.domain != domain
+                or not unique_id.startswith(prefix)
+                or (infix is not None and infix not in unique_id)
+                or unique_id in wanted
+            ):
+                continue
+            _LOGGER.info("Removing %s, which the Hub no longer reports", entry.entity_id)
+            entity_registry.async_remove(entry.entity_id)
+
     # Repairs
 
     @callback
@@ -611,3 +736,15 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
                     translation_key=ISSUE_LEGACY_ENABLED,
                     translation_placeholders={"name": self.config_entry.title},
                 )
+
+
+def _host_keys(state: HubState) -> set[str]:
+    return {host.bdaddr.casefold() for host in state.bt.hosts if host.bdaddr}
+
+
+def _inventory_keys(state: HubState) -> set[tuple[str, tuple[str, ...]]]:
+    return {(device.id, tuple(device.commands)) for device in state.inventory.devices}
+
+
+def _own_identifiers(device: dr.DeviceEntry | dr.ChildDeviceEntry) -> set[str]:
+    return {identifier for domain, identifier in device.identifiers if domain == DOMAIN}

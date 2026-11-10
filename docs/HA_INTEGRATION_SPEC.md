@@ -402,6 +402,25 @@ entity registries, once, before the state is applied. A slot that becomes inacti
 device in place (`stale-devices`: the user removes it through the device page, which the
 integration allows via `async_remove_config_entry_device` when the slot is not active).
 
+**As built** (0.1.10): a remote swapped into a slot (`remote_id` A to B on an active slot) was not
+followed, because the dynamic entities were keyed by slot number and only the fallback-to-unit-id
+migration re-keyed a device. Remote entities are now keyed by the remote's identity (`remote_id`, or
+`{hub_id}:slot{n}` while the Hub has none), so a new identity gets a device and entities on the
+update that reports it, and an entity whose slot now holds another remote is unavailable. The
+coordinator removes, with their entities, the remote devices whose identity no active slot reports,
+the child devices of configured devices the inventory no longer lists, the Bluetooth host sensors
+of hosts the Hub no longer lists and the command buttons of removed commands. It does so on every
+change of those lists and once after setup, for what changed while Home Assistant was down, and
+only from a complete report: remotes while the RF status says `running`, hosts while the Bluetooth
+status says running, devices from a fetched inventory. The fallback-to-unit-id migration keeps its
+re-key and reload; nothing is added or removed while that reload is pending. Setup runs the same
+migration before the platforms, so a unit id that arrived while Home Assistant was down re-keys the
+slot's device instead of leaving it to be removed as stale. A dynamic key whose
+entities are gone from the registry is forgotten, so a remote, host or device that comes back gets
+new entities, and Home Assistant restores the entity ids, names and areas of the removed entries.
+`async_remove_config_entry_device` stays for anything the Hub cannot report. Activity buttons are
+unchanged: unavailable once the activity is deleted.
+
 ### 2.7 Entity catalogue
 
 All entities set `has_entity_name=True`, take `translation_key` = key, use the coordinator, and are
@@ -522,7 +541,7 @@ in code and the Hub announces itself over mDNS since firmware milestone 2. The n
 | `parallel-updates` | 2.7 |
 | `reauthentication-flow`, `reconfiguration-flow` | 2.5 |
 | `discovery`, `discovery-update-info` | zeroconf step with address update; `done`, the firmware announces `_harmony-ng._tcp` since milestone 2 |
-| `dynamic-devices`, `stale-devices` | remote devices appear when a slot activates; Bluetooth host entities follow the paired list; `async_remove_config_entry_device` for inactive slots |
+| `dynamic-devices`, `stale-devices` | remote devices appear when a slot activates; Bluetooth host entities follow the paired list; `async_remove_config_entry_device` for inactive slots. As built (0.1.10): remotes keyed by identity, so a swap is followed; remotes, hosts, configured devices and commands the Hub drops are removed automatically (2.6) |
 | `entity-category`, `entity-device-class`, `entity-disabled-by-default`, `entity-translations`, `icon-translations`, `exception-translations` | 2.7, 2.8, 2.10 |
 | `repair-issues`, `diagnostics` | 2.9 |
 | `docs-*` (twelve rules) | README sections in the order the rules list them: description, supported devices, installation, configuration parameters, actions, triggers, conditions, examples, data update, known limitations, troubleshooting, removal; written in I1 |

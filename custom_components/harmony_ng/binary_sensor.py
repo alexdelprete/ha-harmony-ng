@@ -19,7 +19,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from . import HarmonyNgConfigEntry
 from .const import DOMAIN
 from .coordinator import HarmonyNgCoordinator, HubState
-from .entity import HarmonyNgEntity, async_add_dynamic_entities
+from .entity import HarmonyNgEntity, async_add_dynamic_entities, async_add_remote_entities
 from .pyharmonyng import BtHost, RfSlot
 
 
@@ -77,10 +77,9 @@ async def async_setup_entry(
     _async_remove_addressless_host(hass, coordinator.hub_id)
     async_add_entities(HarmonyNgHubBinarySensor(coordinator, d) for d in HUB_BINARY_SENSORS)
     entry.async_on_unload(
-        async_add_dynamic_entities(
+        async_add_remote_entities(
             coordinator,
             async_add_entities,
-            lambda state: [slot.slot for slot in state.rf.active_slots],
             lambda coord, slot: [
                 HarmonyNgSlotBinarySensor(coord, d, slot) for d in SLOT_BINARY_SENSORS
             ],
@@ -135,7 +134,7 @@ class HarmonyNgBtHostSensor(HarmonyNgEntity, BinarySensorEntity):
         """Key the sensor by the host's address; name it after the host."""
         super().__init__(coordinator, BT_HOST_DESCRIPTION)
         self._bdaddr = bdaddr
-        self._attr_unique_id = f"{coordinator.hub_id}_bt_host_{_address_key(bdaddr)}"
+        self._attr_unique_id = coordinator.bt_host_unique_id(bdaddr)
         self._attr_translation_placeholders = {"name": self._host_name()}
 
     def _host(self) -> BtHost | None:
@@ -161,10 +160,6 @@ class HarmonyNgBtHostSensor(HarmonyNgEntity, BinarySensorEntity):
     def extra_state_attributes(self) -> dict[str, str]:
         """Expose the host's address and name."""
         return {"bdaddr": self._bdaddr, "name": self._host_name()}
-
-
-def _address_key(bdaddr: str) -> str:
-    return bdaddr.replace(":", "").lower()
 
 
 def _async_remove_addressless_host(hass: HomeAssistant, hub_id: str) -> None:

@@ -8,7 +8,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import HarmonyNgConfigEntry
 from .coordinator import HarmonyNgCoordinator
-from .entity import HarmonyNgEntity, async_add_dynamic_entities
+from .entity import HarmonyNgEntity, async_add_remote_entities
 from .pyharmonyng import RemoteButton
 
 EVENT_PRESS = "press"
@@ -28,10 +28,9 @@ async def async_setup_entry(
 ) -> None:
     """Set up one button event entity per paired remote."""
     entry.async_on_unload(
-        async_add_dynamic_entities(
+        async_add_remote_entities(
             entry.runtime_data.coordinator,
             async_add_entities,
-            lambda state: [slot.slot for slot in state.rf.active_slots],
             lambda coord, slot: [HarmonyNgButtonEvent(coord, slot)],
         )
     )

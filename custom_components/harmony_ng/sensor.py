@@ -14,7 +14,7 @@ from homeassistant.helpers.typing import StateType
 
 from . import HarmonyNgConfigEntry
 from .coordinator import HarmonyNgCoordinator, HubState
-from .entity import HarmonyNgEntity, async_add_dynamic_entities
+from .entity import HarmonyNgEntity, async_add_remote_entities
 from .pyharmonyng import ActivityStatus, RfSlot
 
 
@@ -93,10 +93,9 @@ async def async_setup_entry(
     coordinator = entry.runtime_data.coordinator
     async_add_entities(HarmonyNgHubSensor(coordinator, desc) for desc in HUB_SENSORS)
     entry.async_on_unload(
-        async_add_dynamic_entities(
+        async_add_remote_entities(
             coordinator,
             async_add_entities,
-            lambda state: [slot.slot for slot in state.rf.active_slots],
             lambda coord, slot: [HarmonyNgSlotSensor(coord, desc, slot) for desc in SLOT_SENSORS],
         )
     )

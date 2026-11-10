@@ -32,13 +32,7 @@ from homeassistant.components.remote import (
     DOMAIN as REMOTE_DOMAIN,
     SERVICE_SEND_COMMAND,
 )
-from homeassistant.const import (
-    ATTR_ENTITY_ID,
-    SERVICE_TURN_OFF,
-    SERVICE_TURN_ON,
-    STATE_UNAVAILABLE,
-    Platform,
-)
+from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_OFF, SERVICE_TURN_ON, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import device_registry as dr, entity_registry as er
@@ -321,6 +315,10 @@ async def test_device_remotes(
 async def test_device_remote_follows_inventory(
     hass: HomeAssistant, init_integration: MockConfigEntry, fake_transport: FakeTransport
 ) -> None:
+    """A device the Hub adds appears, one it drops is removed with its child device."""
+    entity = hass.data["entity_components"]["remote"].get_entity("remote.living_room_hub_apple_tv")
+    apple_tv = entity.device_entry
+    assert apple_tv is not None
     fake_transport.inventory = Inventory(
         devices=(
             *fake_transport.inventory.devices[:2],
@@ -332,9 +330,11 @@ async def test_device_remote_follows_inventory(
     await hass.async_block_till_done()
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=5))
     await hass.async_block_till_done()
-    assert hass.states.get("remote.living_room_hub_apple_tv").state == STATE_UNAVAILABLE
+    assert hass.states.get("remote.living_room_hub_apple_tv") is None
+    assert dr.async_get(hass).async_get(apple_tv.id) is None
     assert hass.states.get("remote.living_room_hub_projector").state == "unknown"
-    entity = hass.data["entity_components"]["remote"].get_entity("remote.living_room_hub_apple_tv")
+    # An entity still held while its removal is under way refuses to act
+    assert not entity.available
     with pytest.raises(ServiceValidationError, match="No device named 70321458"):
         await entity.async_send_command(["Home"])
     with pytest.raises(ServiceValidationError, match="No device named 70321458"):

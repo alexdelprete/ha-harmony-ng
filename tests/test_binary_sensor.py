@@ -9,7 +9,7 @@ from pytest_homeassistant.common import MockConfigEntry, snapshot_platform
 from syrupy.assertion import SnapshotAssertion
 
 from custom_components.harmony_ng.const import DOMAIN
-from homeassistant.const import STATE_UNAVAILABLE, Platform
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
@@ -72,7 +72,9 @@ async def test_bluetooth_hosts(
     ]
     fake_transport.push(bt)
     await hass.async_block_till_done()
-    assert hass.states.get(APPLE_TV).state == STATE_UNAVAILABLE
+    # A host the Hub no longer lists is removed, entity and registry entry
+    assert hass.states.get(APPLE_TV) is None
+    assert er.async_get(hass).async_get(APPLE_TV) is None
     assert hass.states.get(SHIELD).state == "on"
     assert hass.states.get("binary_sensor.living_room_hub_projector_connected").state == "off"
 
