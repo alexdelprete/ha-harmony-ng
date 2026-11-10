@@ -163,6 +163,10 @@ Home Assistant was not running. Nothing is removed while the Hub's RF or Bluetoo
 running, so a restart of that service does not remove anything. A remote paired again later gets
 the entity ids, names and areas it had.
 
+Device information follows the Hub too: the Hub's firmware version after an update, a remote's
+firmware, model and name, and the name of a device renamed on the Hub appear on the next update.
+A name you set in Home Assistant stays in front.
+
 ## Known limitations
 
 - The Hub needs harmony-ng firmware with the event bus. The integration refuses older firmware

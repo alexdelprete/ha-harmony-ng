@@ -421,6 +421,15 @@ new entities, and Home Assistant restores the entity ids, names and areas of the
 `async_remove_config_entry_device` stays for anything the Hub cannot report. Activity buttons are
 unchanged: unavailable once the activity is deleted.
 
+**As built** (0.1.11): device info applied only when entities were added, so the Hub's
+`sw_version` and `hw_version` after a firmware update, a remote's `sw_version` and a configured
+device renamed on the Hub stayed stale until a reload. On every change of the hub object, the RF
+status or the inventory the coordinator writes the current `sw_version` and `hw_version` of the
+Hub, the `model`, `name`, `sw_version` and `serial_number` of each remote, and the name of each
+configured device's child device. A value the Hub does not report (a product still unknown, a
+missing version) leaves the registry as it is, so the remote model kept since 0.1.6 is not
+blanked; `name_by_user` is never touched.
+
 ### 2.7 Entity catalogue
 
 All entities set `has_entity_name=True`, take `translation_key` = key, use the coordinator, and are

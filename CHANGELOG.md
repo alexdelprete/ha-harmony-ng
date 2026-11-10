@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Device information was written only when the entities were added, at startup or a reload. The
+  Hub's device kept its old firmware version after a firmware update, a remote kept its old
+  firmware after an update, and a device renamed on the Hub kept its old name. They now follow
+  the Hub on the next update. A value the Hub does not report yet leaves the device as it is, and
+  a name set in Home Assistant stays in front.
+
 ## [0.1.10] - 2026-11-10
 
 ### Fixed
