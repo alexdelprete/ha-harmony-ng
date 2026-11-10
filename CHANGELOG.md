@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A remote swapped into an RF slot that already had one (one remote unpaired, another paired in
+  its place) was not followed: Home Assistant kept the old remote's device with the slot's
+  entities and created nothing for the new one until a reload, after which the old device was
+  left behind. Remote entities are now keyed by the remote itself, so the new remote gets its
+  device and entities at once.
+
+### Changed
+
+- Remotes, Bluetooth hosts and configured devices the Hub no longer reports are removed with
+  their entities, also when that happened while Home Assistant was not running; the user no
+  longer deletes them by hand. Commands removed from a configured device lose their buttons.
+  Nothing is removed while the Hub's RF or Bluetooth service is not running. A remote, host or
+  device that comes back gets the entity ids, names and areas it had.
+
 ## [0.1.9] - 2026-11-09
 
 ### Added

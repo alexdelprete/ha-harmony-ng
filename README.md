@@ -155,6 +155,14 @@ Inventory and activities are read once at startup and again when the Hub reports
 change. If the connection drops, every entity becomes unavailable until the integration reconnects,
 which it does with increasing delays up to 30 seconds.
 
+Remotes, Bluetooth hosts and configured devices follow the Hub without a reload. A remote paired
+into a slot, including another remote swapped into a slot that already had one, gets its device
+and entities on the next update; a host or device the Hub adds does too. A remote, host, device
+or command the Hub no longer reports is removed with its entities, also when that happened while
+Home Assistant was not running. Nothing is removed while the Hub's RF or Bluetooth service is not
+running, so a restart of that service does not remove anything. A remote paired again later gets
+the entity ids, names and areas it had.
+
 ## Known limitations
 
 - The Hub needs harmony-ng firmware with the event bus. The integration refuses older firmware

@@ -24,7 +24,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from . import HarmonyNgConfigEntry
 from .const import DOMAIN
 from .coordinator import HarmonyNgCoordinator
-from .entity import HarmonyNgEntity, async_add_dynamic_entities
+from .entity import HarmonyNgEntity, async_add_dynamic_entities, async_add_remote_entities
 from .helpers import hub_call
 from .pyharmonyng import CAP_RF_WAKE, POWER_OFF_ACTIVITY_ID, Activity, CommandAction, Device
 from .transport import HarmonyNgTransport
@@ -91,10 +91,9 @@ async def async_setup_entry(
     _async_remove_power_off_activity(hass, coordinator.hub_id)
     async_add_entities(HarmonyNgHubButton(coordinator, d) for d in HUB_BUTTONS)
     entry.async_on_unload(
-        async_add_dynamic_entities(
+        async_add_remote_entities(
             coordinator,
             async_add_entities,
-            lambda state: [slot.slot for slot in state.rf.active_slots],
             lambda coord, slot: [HarmonyNgSlotButton(coord, d, slot) for d in SLOT_BUTTONS],
         )
     )
@@ -208,7 +207,7 @@ class HarmonyNgDeviceCommandButton(HarmonyNgEntity, ButtonEntity):
         self._device_id = device_id
         self._command = command
         self._attr_name = command
-        self._attr_unique_id = f"{coordinator.child_identifier(device_id)}_command_{command}"
+        self._attr_unique_id = coordinator.command_unique_id(device_id, command)
         self._attr_device_info = coordinator.child_device_info(device_id)
 
     @property
