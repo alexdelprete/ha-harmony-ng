@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.11] - 2026-11-10
+
 ### Fixed
 
 - Device information was written only when the entities were added, at startup or a reload. The
@@ -228,7 +230,8 @@ event bus (`api_version` 2 or newer). Requires Home Assistant 2026.11.0 or newer
 - Harmony NG brand images served by the integration.
 - Quality scale `platinum`: every Bronze to Platinum rule done or exempt.
 
-[Unreleased]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.10...HEAD
+[Unreleased]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.11...HEAD
+[0.1.11]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.10...v0.1.11
 [0.1.10]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.9...v0.1.10
 [0.1.9]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.8...v0.1.9
 [0.1.8]: https://github.com/alexdelprete/ha-harmony-ng/compare/v0.1.7...v0.1.8
