@@ -14,6 +14,7 @@ from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr, entity_registry as er, issue_registry as ir
 from homeassistant.helpers.debounce import Debouncer
 from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
+from homeassistant.helpers.typing import UNDEFINED, UndefinedType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -262,6 +263,7 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         )
         self._inventory_loaded = True
         self._async_remove_stale(base, self._state)
+        self._async_refresh_devices(base, self._state)
         return self._state
 
     async def async_shutdown(self) -> None:
@@ -398,7 +400,6 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         new_state = self._apply_event(state, event)
         if isinstance(event, RfStatusEvent):
             self._migrate_remote_identities(state.rf, new_state.rf)
-            self._refresh_remote_devices(state.rf, new_state.rf)
         if isinstance(event, ButtonEvent):
             for listener in list(self._button_listeners.get(event.button.slot, ())):
                 listener(event.button)
@@ -431,7 +432,6 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         if state is not None:
             new_state = replace(new_state, rf=keep_known_products(state.rf, new_state.rf))
             self._migrate_remote_identities(state.rf, new_state.rf)
-            self._refresh_remote_devices(state.rf, new_state.rf)
         self._async_refresh_issues(legacy_enabled=snapshot.hub.legacy_enabled)
         self._set_state(new_state)
         if snapshot.gap or (
@@ -447,6 +447,7 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
         self._state = state
         if old is not None:
             self._async_remove_stale(old, state)
+            self._async_refresh_devices(old, state)
         if self.data is not None or self.last_update_success is False:
             self.async_set_updated_data(state)
         if self._discovery_checked and state.hub.ha_discovery != self._ha_discovery:
@@ -541,36 +542,6 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
             if rf_slot.remote_id:
                 self._migrate_slot(rf_slot.slot, rf_slot.remote_id)
 
-    def _refresh_remote_devices(self, old: RfStatus, new: RfStatus) -> None:
-        """Update a remote's model and name when the Hub learns its product.
-
-        The device info only applies when entities are added, so a product that
-        arrives later (a firmware update, a remote reporting its skin id) is
-        written to the registry here. A name the user set stays in front.
-        """
-        device_registry = dr.async_get(self.hass)
-        for new_slot in new.slots:
-            if not new_slot.active:
-                continue
-            name = remote_device_name(new, new_slot.slot)
-            old_slot = old.slot(new_slot.slot)
-            if (
-                old_slot is not None
-                and old_slot.product_name == new_slot.product_name
-                and remote_device_name(old, new_slot.slot) == name
-            ):
-                continue
-            identifier = new_slot.remote_id or f"{self.hub_id}:slot{new_slot.slot}"
-            device = device_registry.async_get_device_by_identifier(
-                (DOMAIN, identifier), self.config_entry.entry_id
-            )
-            if device is None:
-                continue
-            if device.model != new_slot.product_name or device.name != name:
-                device_registry.async_update_device(
-                    device.id, model=new_slot.product_name, name=name
-                )
-
     def _migrate_slot(self, slot: int, remote_id: str) -> bool:
         old_identifier = f"{self.hub_id}:slot{slot}"
         device_registry = dr.async_get(self.hass)
@@ -593,6 +564,85 @@ class HarmonyNgCoordinator(DataUpdateCoordinator[HubState]):
                 )
         _LOGGER.info("Remote in slot %s now identified by its unit id", slot)
         return True
+
+    # Device info
+
+    @callback
+    def _async_refresh_devices(self, old: HubState, new: HubState) -> None:
+        """Write what the Hub now reports to the devices it describes.
+
+        Device info only applies when entities are added, so a Hub or remote firmware
+        update, a product the Hub learns later, or a device renamed on the Hub is
+        written here. A name the user set stays in front; a value the Hub does not
+        know (yet) leaves the registry as it is.
+        """
+        if self.reload_pending or (
+            old.hub is new.hub and old.rf is new.rf and old.inventory is new.inventory
+        ):
+            return
+        device_registry = dr.async_get(self.hass)
+        entry_id = self.config_entry.entry_id
+        hub = device_registry.async_get_device_by_identifier((DOMAIN, self.hub_id), entry_id)
+        if hub is not None:
+            self._update_device(
+                hub,
+                sw_version=new.hub.version or None,
+                hw_version=new.hub.firmware or None,
+            )
+        for rf_slot in new.rf.active_slots:
+            identifier = rf_slot.remote_id or f"{self.hub_id}:slot{rf_slot.slot}"
+            device = device_registry.async_get_device_by_identifier((DOMAIN, identifier), entry_id)
+            if device is None:
+                continue
+            product = rf_slot.product_name
+            self._update_device(
+                device,
+                model=product,
+                name=remote_device_name(new.rf, rf_slot.slot) if product else None,
+                sw_version=rf_slot.sw_version,
+                serial_number=rf_slot.remote_id,
+            )
+        if hub is None or not self._inventory_loaded:
+            return
+        for configured in new.inventory.devices:
+            child = device_registry.async_get_child_device_by_identifier(
+                (DOMAIN, self.child_identifier(configured.id)), entry_id
+            )
+            if child is not None and configured.name and child.name != configured.name:
+                device_registry.async_update_child_device(child.id, name=configured.name)
+
+    def _update_device(
+        self,
+        device: dr.DeviceEntry,
+        *,
+        model: str | None = None,
+        name: str | None = None,
+        sw_version: str | None = None,
+        hw_version: str | None = None,
+        serial_number: str | None = None,
+    ) -> None:
+        """Update the fields that changed; None means unknown and is skipped."""
+
+        def changed(value: str | None, current: str | None) -> str | UndefinedType:
+            return value if value is not None and value != current else UNDEFINED
+
+        fields = {
+            "model": changed(model, device.model),
+            "name": changed(name, device.name),
+            "sw_version": changed(sw_version, device.sw_version),
+            "hw_version": changed(hw_version, device.hw_version),
+            "serial_number": changed(serial_number, device.serial_number),
+        }
+        if all(value is UNDEFINED for value in fields.values()):
+            return
+        dr.async_get(self.hass).async_update_device(
+            device.id,
+            model=fields["model"],
+            name=fields["name"],
+            sw_version=fields["sw_version"],
+            hw_version=fields["hw_version"],
+            serial_number=fields["serial_number"],
+        )
 
     # Devices and entities the Hub no longer reports
 
