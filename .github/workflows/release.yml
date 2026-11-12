@@ -73,6 +73,6 @@ jobs:
           zip harmony_ng.zip -r ./
 
       - name: "Upload the ZIP file to the release"
-        uses: softprops/action-gh-release@v3.0.3
+        uses: softprops/action-gh-release@v3.0.4
         with:
           files: ${{ github.workspace }}/custom_components/harmony_ng/harmony_ng.zip
