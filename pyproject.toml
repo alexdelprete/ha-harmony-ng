@@ -34,7 +34,7 @@ dev = [
     "pytest-homeassistant==2026.11.0",
     "pytest-timeout",
     "infrared-protocols==10.7.0",
-    "aiohasupervisor==0.8.1",
+    "aiohasupervisor==0.11.0",
 ]
 
 [dependency-groups]
@@ -56,7 +56,7 @@ pytest = [
 dev = [
     "homeassistant>=2026.11.0",
     "infrared-protocols==10.7.0",
-    "aiohasupervisor==0.8.1",
+    "aiohasupervisor==0.11.0",
     { include-group = "lint" },
     { include-group = "pytest" },
 ]
