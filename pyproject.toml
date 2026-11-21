@@ -31,7 +31,7 @@ dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
     "pytest-cov",
-    "pytest-homeassistant==2026.11.0",
+    "pytest-homeassistant==2026.11.2",
     "pytest-timeout",
     "infrared-protocols==10.5.0",
     "aiohasupervisor==0.8.1",
@@ -50,7 +50,7 @@ pytest = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
     "pytest-cov",
-    "pytest-homeassistant==2026.11.0",
+    "pytest-homeassistant==2026.11.2",
     "pytest-timeout",
 ]
 dev = [
