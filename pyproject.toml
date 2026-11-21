@@ -12,7 +12,7 @@ authors = [{ name = "alexdelprete" }]
 "Bug Tracker" = "https://github.com/alexdelprete/ha-harmony-ng/issues"
 
 # <!-- BEGIN SHARED:repo-sync -->
-# Synced by repo-sync on 2026-11-06
+# Synced by repo-sync on 2026-11-21
 
 # Development dependencies, shared across the fleet. The pins come from the
 # template repo (requirements-fleet-pins.txt and [tool.repo-sync.tool-versions]);
@@ -33,8 +33,8 @@ dev = [
     "pytest-cov",
     "pytest-homeassistant==2026.11.0",
     "pytest-timeout",
-    "infrared-protocols==10.6.0",
-    "aiohasupervisor==0.10.0",
+    "infrared-protocols==10.5.0",
+    "aiohasupervisor==0.8.1",
 ]
 
 [dependency-groups]
@@ -55,10 +55,10 @@ pytest = [
 ]
 dev = [
     "homeassistant>=2026.11.0",
+    "infrared-protocols==10.5.0",
+    "aiohasupervisor==0.8.1",
     { include-group = "lint" },
     { include-group = "pytest" },
-    "infrared-protocols==10.6.0",
-    "aiohasupervisor==0.10.0",
 ]
 
 # Explicit package discovery: scripts/develop creates a config/ directory at the
